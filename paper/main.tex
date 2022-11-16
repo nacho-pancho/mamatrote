@@ -154,8 +154,66 @@ A critical parameter of the above procedure is the assumed maximum distance $s$ 
 
 In general, the set of candidate models $\set{Q}$ will contain several elements. Therefore, in order to reduce the number of false detections (NFA for abbreviation)  we need take this multiplicity into account. The standard approach is to use a Bonferroni correction, that is, to divide the detection threshold by the number of elements in $\set{Q}$.
 
-\section{Implementation}
+\section{Technical details}
+
+Here we describe two things: first, the detection algorithm; second, the  simmulations.
+
+
+\subsection{Detection algorithm}
+
+\paragraph{Inputs:} 
+\begin{enumerate}
+\item Dataset $\set{X}$ consisting of $N$ samples of dimension $n$
+\item Set of candidate models $\set{Q}$ given as triplets $(\vec{u},\vec{V},\vec{W})$ so that points in the affine set are generated as $\vec{u} + \mat{V}\vec{b}$ and $\vec{W}$ is the orthogonal complement of $\mat{V}$.
+\item Analysis scale $s$
+\item Significance level $\alpha$
+\end{enumerate}
+
+\paragraph{Algorithm: for each candidate model $q$ in $\set{Q}$ (the number of elements in $\set{Q}$ is $N_T$}
+\begin{enumerate}
+\item Select all points in $\set{X}$ whose distance is less than or equal than $s$, $\set{X}' = \setdef{\vec{x} \in \set{X}: d(\vec{x},q) \leq s)}$.
+\item Compute empirical distribution of distances in $\set{X}'$
+\item Compute the Kolmogorov-Smirnov score using the variant that only considers the largest \emph{positive} difference beteween the empirical and background distribution
+\item Declare a detection if the KS score is below $\alpha/N_T$
+\end{enumerate}
+
+\subsection{Simmulation}
+
+\paragraph{Inputs:} 
+\begin{enumerate}
+\item Total number of points $N$
+\item Proportion of points that go to all the models, $\rho$
+\item Number of ground truth models, $M$
+\item Ambient space dimension $n$
+\item Affine space dimension $m < n$
+\item Distribution $g()$ used to displace model points from their exact position (e.g., Laplacian)
+\item Scatter ratio $\sigma$: scale of displacement distribution
+\end{enumerate}
+
+\paragraph{Algorithm:}
+\begin{enumerate}
+\item Draw $(1-\rho)N$ background points so that their coordinates are uniformly distributed between $0$ and $R$
+\item Repeat $M$ times:
+  \begin{enumerate}
+  \item Draw $m+1$ points $\setdef{\vec{y}_0,\vec{y}_1,\ldots,\vec{y}_m}$ in the same way as the background
+  \item Set $\vec{u} = \vec{y}_0$
+  \item Set $\vec{y}'_i = \vec{y}_i - \vec{u}$
+  \item Construct an orthogonal basis $\mat{V}$ for the affine set using 
+$\setdef{\vec{y}'_1,\ldots,\vec{y}'_m}$
+  \item Construct $\mat{W}$, a basis for the orthogonal complement of $\mat{V}$
+  \item Add $q=(\vec{u},\mat{V},\mat{W})$ to the set of ground truth models
+  \item Draw $K=\rho/M$ random $\reals^m$ points $\setdef{\vec{b}_1,\ldots,\vec{b}_{K}}$  so that $b_i \sim \mathrm{Uni}(0,R)$
+  \item Draw $K=\rho/M$ random $\reals^{n-m}$ points $\setdef{\vec{a}_1,\ldots,\vec{a}_{K}}$  so that $\|a_i\|_2 \sim g(\delta)$ and the direction of $\vec{a}$ is uniformly distributed. This is easy to approximate by first sampling from a Gaussian distribution and then rescaling the points to norm $\delta$ where $\delta$ follows the desired distribution
+  \item Construct model points $\vec{x}_i = \vec{u} + \mat{W}\vec{a}_i + \mat{V}\vec{b}_i$
+  \item Add model points to $\set{X}$
+  \end{enumerate}
+\end{enumerate}
+
+Background points are generated so that their coordinates follow a uniform distribution between $0$ and $R$, where $R$ is a parameter.
+
 
 \section{Results}
+
+
 
 \end{document}
