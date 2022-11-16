@@ -96,16 +96,20 @@ def sim_affine_cloud(affine_set, num_points, distro1, distro2):
     :return: num_points simulated points whose distance from the affine set
              is distributed as fdist
     """
-    x_0,V,W = affine_set
-    n = len(x_0)
+    c,V,W = affine_set
+    n = len(c)
     m = len(V)
     b = distro1((num_points,m))
-    c = distro2((num_points,n-m))
+    a0 = np.random.normal(size=(num_points,n-m)) # anisotropic
+    norms = np.linalg.norm(a0,axis=1)
+    deltas = distro2(num_points)
+    a = np.diag(deltas/norms) @ a0
     if len(V) > 0:
-        return x_0 + b @ V + c @ W
+        x =  c + b @ V + a @ W
+        return x
     else:
-        return x_0 + c @ W
-
+        x =  c + a @ W
+        return x
 
 def nfa_ks(data, model, model_dim, model_nparam, distance, scale):
     """
