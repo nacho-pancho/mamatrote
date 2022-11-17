@@ -13,6 +13,9 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 from  trotelib import *
 
+import matplotlib.cm as cm
+
+
 def model_vs_scale(m,n,N,seed=42):
     """
     detect affine line
@@ -68,28 +71,29 @@ def model_vs_scale(m,n,N,seed=42):
     plt.ylabel('logNFA')
     plt.show()
 
-def model_vs_scale_and_npoints(m,n,Ns,scales,scatter=0.1,seed=42,nsamp=10):
+def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_dist=None, bg_scale=1, scatter=0.1,seed=42,nsamp=10):
     """
     detect affine line
     :return:
     """
-    import matplotlib.cm as cm
     rng = random.default_rng(seed)
-    distro0    = lambda x: rng.uniform(size=x, low=0, high=1)
-    affine_set = sim_affine_set(n,m,distro0)
-    rang = 2
-    d1 = lambda x: rng.uniform(size=x,low=-rang,high=rang)
-    d2 = lambda x: rng.uniform(size=x,high=scatter*rang)
+    if scatter_dist is None:
+        scatter_dist = build_background_distribution(n-m)
+    if bg_dist is None:
+        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
+    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
+
+    affine_set = sim_affine_set(n,m,model_dist)
     nfas = np.zeros((len(Ns),len(scales)))
     for i,N in enumerate(Ns):
-        nmodel = 9*(N // 10)
+        nmodel = int(prop*N)
         nback  = N - nmodel
         seeds = rng.integers(low=1,high=65535,size=nsamp)
         nseeds = len(seeds)
         t0 = time.time()
         for seed in seeds:
-            model_points = sim_affine_cloud(affine_set, nmodel, d1, d2)
-            back_points = d1((nback, n))
+            model_points = sim_affine_cloud(affine_set, nmodel, model_dist, scatter_dist, scatter=scatter)
+            back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
@@ -102,18 +106,20 @@ def model_vs_scale_and_npoints(m,n,Ns,scales,scatter=0.1,seed=42,nsamp=10):
     return  nfas/nseeds
 
 
-def model_vs_scale_and_proportion(m,n,N,props,scales,scatter=0.1,nsamp=10,seed=42):
+def model_vs_scale_and_proportion(m,n,N,props,scales,scatter_dist=None, bg_dist=None, bg_scale=1, scatter=0.1, nsamp=10, seed=42):
     """
     detect affine line
     :return:
     """
-    import matplotlib.cm as cm
+    if scatter_dist is None:
+        scatter_dist = build_background_distribution(n-m)
+    if bg_dist is None:
+        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
+    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
+
     rng = random.default_rng(seed)
-    distro0    = lambda x: rng.uniform(size=x, low=0, high=1)
-    affine_set = sim_affine_set(n,m,distro0)
-    rang = 2
-    d1 = lambda x: rng.uniform(size=x,low=-rang,high=rang)
-    d2 = lambda x: rng.uniform(size=x,high=scatter*rang)
+
+    affine_set = sim_affine_set(n,m,model_dist)
     nfas = np.zeros((len(props),len(scales)))
     for i,p in enumerate(props):
         nmodel = int(np.ceil(p*N))
@@ -121,8 +127,8 @@ def model_vs_scale_and_proportion(m,n,N,props,scales,scatter=0.1,nsamp=10,seed=4
         seeds = rng.integers(low=1,high=65535,size=nsamp)
         nseeds = len(seeds)
         for seed in seeds:
-            model_points = sim_affine_cloud(affine_set, nmodel, d1, d2)
-            back_points = d1((nback, n))
+            model_points = sim_affine_cloud(affine_set, nmodel, model_dist, scatter_dist, scatter=scatter)
+            back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
@@ -131,17 +137,19 @@ def model_vs_scale_and_proportion(m,n,N,props,scales,scatter=0.1,nsamp=10,seed=4
                 nfas[i,j] += lognfa
     return nfas*(1/nseeds)
 
-def model_vs_scale_and_scatter(m,n,N,scatters,scales,prop=0.5,nsamp=10,seed=42):
+def model_vs_scale_and_scatter(m,n,N,scatters,scales,scatter_dist=None, bg_dist=None, bg_scale=1,prop=0.5,nsamp=10,seed=42):
     """
     detect affine line
     :return:
     """
-    import matplotlib.cm as cm
+    if scatter_dist is None:
+        scatter_dist = build_background_distribution(n-m)
+    if bg_dist is None:
+        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
+    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
+
     rng = random.default_rng(seed)
-    distro0    = lambda x: rng.uniform(size=x, low=0, high=1)
-    affine_set = sim_affine_set(n,m,distro0)
-    rang = 2
-    d1 = lambda x: rng.uniform(size=x,low=-rang,high=rang)
+    affine_set = sim_affine_set(n,m,model_dist)
     nfas = np.zeros((len(scatters),len(scales)))
     for i,scat in enumerate(scatters):
         nmodel = int(np.ceil(prop*N))
@@ -149,9 +157,8 @@ def model_vs_scale_and_scatter(m,n,N,scatters,scales,prop=0.5,nsamp=10,seed=42):
         seeds = rng.integers(low=1,high=65535,size=nsamp)
         nseeds = len(seeds)
         for seed in seeds:
-            d2 = lambda x: rng.uniform(size=x, high=scat * rang)
-            model_points = sim_affine_cloud(affine_set, nmodel, d1, d2)
-            back_points = d1((nback, n))
+            model_points = sim_affine_cloud(affine_set, nmodel, model_dist, scatter_dist, scatter=scat)
+            back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)

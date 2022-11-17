@@ -17,6 +17,19 @@ from numpy import linalg as la
 from scipy import stats
 from scipy import special
 
+def build_background_distribution(r,type='power'):
+    """
+    Construct a probability distribution over the ball of radius in ambient
+    space R^r so that the distribution of the distance to the origin is uniform.
+    This is a power law distribution with scale parameter s and power r-1
+    :param r: dimension of the ball
+    :param s: radius of the ball
+    :return:
+    """
+    if type == 'power':
+        return lambda size: np.random.power(r,size=size)
+    else:
+        return None
 
 def build_affine_set(list_of_points):
     """
@@ -81,7 +94,7 @@ def sim_affine_set(ambient_dim,affine_dim,distro):
     return build_affine_set(V)
 
 
-def sim_affine_cloud(affine_set, num_points, distro1, distro2):
+def sim_affine_cloud(affine_set, num_points, model_distro, scatter_distro, scatter):
     """
     given an affine set, simulate a cloud of points such
     that the distribution of their distance to the given affine
@@ -99,10 +112,10 @@ def sim_affine_cloud(affine_set, num_points, distro1, distro2):
     c,V,W = affine_set
     n = len(c)
     m = len(V)
-    b = distro1((num_points,m))
+    b = model_distro((num_points,m))
     a0 = np.random.normal(size=(num_points,n-m)) # anisotropic
     norms = np.linalg.norm(a0,axis=1)
-    deltas = distro2(num_points)
+    deltas = scatter*scatter_distro(num_points)
     a = np.diag(deltas/norms) @ a0
     if len(V) > 0:
         x =  c + b @ V + a @ W
@@ -144,8 +157,9 @@ if __name__ == "__main__":
     distro0 = lambda x: rng.uniform(size=x, low=0, high=1)
     affine_set  = sim_affine_set(n,m,distro0)
     d1 = lambda x: rng.uniform(size=x,low=-2,high=2)
-    d2 = lambda x: rng.laplace(size=x,scale=0.01)
-    test_points = sim_affine_cloud(affine_set, N, d1,d2)
+    d2 = build_background_distribution(n-m)
+    scatter = 0.02
+    test_points = sim_affine_cloud(affine_set, N, d1, d2, scatter)
     plt.figure(figsize=(10,5))
     plt.subplot(1,2,1)
     plt.scatter(test_points[:,0],test_points[:,1],color='gray',alpha=0.05)
