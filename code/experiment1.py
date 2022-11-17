@@ -76,6 +76,9 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
     detect affine line
     :return:
     """
+    print("model vs scale and number of points")
+    print("scales:",scales)
+    print("number of points:",Ns)
     rng = random.default_rng(seed)
     if scatter_dist is None:
         scatter_dist = build_background_distribution(n-m)
@@ -96,13 +99,15 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
             back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
+                if seed == seeds[0]:
+                    print(f"\tN {N:6} scale {s:6.3f} samples {nsamp:3}")
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
                 lognfa = np.log(nfa)
                 #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
                 nfas[i,j] += np.log(max(nfa,1e-40))
         dt = time.time() - t0
         rt = (len(Ns)-i)*dt
-        print('dt=',dt,'remaining time=',rt)
+        #print('dt=',dt,'remaining time=',rt)
     return  nfas/nseeds
 
 
@@ -111,6 +116,10 @@ def model_vs_scale_and_proportion(m,n,N,props,scales,scatter_dist=None, bg_dist=
     detect affine line
     :return:
     """
+    print("model vs scale and proportion of foreground/background points")
+    print("scales:",scales)
+    print("prportions:",props)
+
     if scatter_dist is None:
         scatter_dist = build_background_distribution(n-m)
     if bg_dist is None:
@@ -131,6 +140,8 @@ def model_vs_scale_and_proportion(m,n,N,props,scales,scatter_dist=None, bg_dist=
             back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
+                if seed == seeds[0]:
+                    print(f"\tprop {p:6.3f} scale {s:6.3f} samples {nsamp:3}")
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
                 lognfa = np.log(max(nfa,1e-40))
                 #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
@@ -142,6 +153,10 @@ def model_vs_scale_and_scatter(m,n,N,scatters,scales,scatter_dist=None, bg_dist=
     detect affine line
     :return:
     """
+    print("model vs scale and different model scatters")
+    print("scales:",scales)
+    print("scatters:",scatters)
+
     if scatter_dist is None:
         scatter_dist = build_background_distribution(n-m)
     if bg_dist is None:
@@ -161,13 +176,13 @@ def model_vs_scale_and_scatter(m,n,N,scatters,scales,scatter_dist=None, bg_dist=
             back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
+                if seed == seeds[0]:
+                    print(f"\tscatter {scat:6.3f} scale {s:6.3f} samples {nsamp:3}")
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
                 lognfa = np.log(max(nfa,1e-40))
                 #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
                 nfas[i,j] += lognfa
     return nfas*(1/nseeds)
-
-
 
 def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
     X, Y = np.meshgrid(x,y)
@@ -201,7 +216,7 @@ if __name__ == "__main__":
     # command line arguments
     #
     ap = argparse.ArgumentParser()
-    ap.add_argument("--maxn", type=int, default=10000,
+    ap.add_argument("--maxn", type=int, default=1000,
                     help="max number of points to simmulate")
     ap.add_argument("--scatter", type=float, default=0.1,
                     help="Proportion of scale of dispersion from affine set to scale of global point cloud")
@@ -215,10 +230,11 @@ if __name__ == "__main__":
     n      = 2 # ambient dim
     #model_vs_scale(m,n,N)
     nsamp  = 50
-    Ns     = np.arange(N//10,N+N//10,step=N//10)
-    scales = np.arange(0.025,0.2+0.025,step=0.025)
-    props  = np.arange(0.1,1.0,step=0.1)
-    scatters = np.logspace(-2,-1,num=10,base=10)
+    #Ns     = np.arange(N//10,N+N//10,step=N//10)
+    Ns     = np.round(np.logspace(6,10,base=2,num=25)).astype(int)
+    scales = np.logspace(-10,-2,base=2,num=25)
+    props  = np.arange(0.05,1.05,step=0.05)
+    scatters = np.logspace(-2,-1,num=25,base=10)
     #scales =   np.logspace(-3,0,num=10,base=10)
     def_scatter = 0.1
     nfas   = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
