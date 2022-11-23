@@ -61,6 +61,38 @@ def build_affine_set(list_of_points):
         W = W.T
     return x_0, V, W
 
+def build_affine_set_relative_to(affine_set,dist=0,angle=0):
+    """
+    Given an affine set, build another one so that it is at a given angle
+    respect to the first dimension (in the first dimension only, not generic rotation)
+    or either parallel at a given distance (along the first direction of W)
+    """
+    c,V,W = affine_set
+    m,n = V.shape
+    n = len(c)
+    #print("m=",m)
+    if angle != 0:
+        R      = np.eye(n)
+        #print(V.shape,W.shape, R.shape)
+        R[0,0] = R[1,1] = np.cos(angle)
+        R[0,1] = np.sin(angle)
+        R[1,0] = -np.sin(angle)
+        if m > 0:
+            V2 = V @ R
+        else:
+            V2 = V
+        W2 = W @ R
+    else:
+        V2 = V
+        W2 = W
+    
+    if dist != 0:
+        c2 = c + dist * W[0,:]
+    else:
+        c2 = c
+    return (c2,V2,W2)
+
+
 
 def distance_to_affine(list_of_points, affine_set, P=None):
     """
