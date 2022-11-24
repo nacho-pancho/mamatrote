@@ -233,59 +233,33 @@ if __name__ == "__main__":
     #Ns     = np.arange(N//10,N+N//10,step=N//10)
     Ns     = np.round(np.logspace(6,10,base=2,num=25)).astype(int)
     scales = np.logspace(-10,-2,base=2,num=25)
-    props  = np.arange(0.05,1.05,step=0.05)
-    scatters = np.logspace(-2,-1,num=25,base=10)
-    #scales =   np.logspace(-3,0,num=10,base=10)
     def_scatter = 0.1
     nfas   = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
     ax     = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 2D cluster')
-    #nfas   = model_vs_scale_and_proportion(m,n,N,props,scales,scatter=def_scatter,nsamp=nsamp)
-    #ax     = plot_scores_2d(props,'proportion of fg points',scales,'analysis scale',nfas,'NFA vs scales and proportion on 2D cluster')
-    nfas   = model_vs_scale_and_scatter(m,n,N,scatters,scales,nsamp=nsamp)
-    ax     = plot_scores_2d(scatters,'model scatter',scales,'analysis scale',nfas,'NFA vs scatter and proportion on 2D cluster')
     #
     # line in 2D
     #
     n = 2
     m = 1
-    #model_vs_scale(m,n,N)
     nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
     ax   = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 2D line')
-    #nfas = model_vs_scale_and_proportion(m,n,N,props,scales,scatter=def_scatter,nsamp=nsamp)
-    #ax   = plot_scores_2d(props,'proportion of fg points',scales,'analysis scale',nfas,'NFA vs scales and proportion on 2D line')
-    nfas = model_vs_scale_and_scatter(m,n,N,scatters,scales,nsamp=nsamp)
-    ax   = plot_scores_2d(scatters,'model scatter',scales,'analysis scale',nfas,'NFA vs scatter and proportion on 2D line')
     #
     # cluster in 3D
     n    = 3
     m    = 0 # affine space dimension
     nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
     ax   = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 3D cluster')
-    #nfas = model_vs_scale_and_proportion(m,n,10000,props,scales,scatter=def_scatter,nsamp=nsamp)
-    #ax   = plot_scores_2d(props,'proportion of fg points',scales,'analysis scale',nfas,'NFA vs scales and proportion on 3D cluster')
-    nfas = model_vs_scale_and_scatter(m,n,N,scatters,scales,nsamp=nsamp)
-    ax   = plot_scores_2d(scatters,'model scatter',scales,'analysis scale',nfas,'NFA vs scatter and proportion on 3D cluster')
     #
     # line in 3D
     #
     m = 1
     n = 3
-    #model_vs_scale(m,n,N)
     nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
     ax = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 3D line')
-    #nfas = model_vs_scale_and_proportion(m,n,10000,props,scales,scatter=def_scatter,nsamp=nsamp)
-    #ax = plot_scores_2d(props,'proportion of fg points',scales,'analysis scale',nfas,'NFA vs scales and proportion on 3D line')
-    nfas = model_vs_scale_and_scatter(m,n,N,scatters,scales,nsamp=nsamp)
-    ax   = plot_scores_2d(scatters,'model scatter',scales,'analysis scale',nfas,'NFA vs scatter and proportion on 3D line')
     #
     # plane in 3D
     #
     m = 2
     n = 3
-    #model_vs_scale(m,n,N)
     nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
     ax = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 3D plane')
-    #nfas = model_vs_scale_and_proportion(m,n,10000,props,scales,scatter=def_scatter,nsamp=nsamp)
-    #ax = plot_scores_2d(props,'proportion of fg points',scales,'analysis scale',nfas,'NFA vs scales and proportion on 3D plane')
-    nfas = model_vs_scale_and_scatter(m,n,N,scatters,scales,nsamp=nsamp)
-    ax   = plot_scores_2d(scatters,'model scatter',scales,'analysis scale',nfas,'NFA vs scatter and proportion on 3D plane')
