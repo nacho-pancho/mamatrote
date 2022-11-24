@@ -58,7 +58,7 @@ def parallel_vs_distance(m,n,
     """
     rng = random.default_rng(seed)
     if scatter_dist is None:
-        scatter_dist = build_background_distribution(n-m)
+        scatter_dist = build_scatter_distribution(n - m)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
@@ -85,7 +85,7 @@ def parallel_vs_distance(m,n,
                 if seed == seeds[0]:
                     #print(f"\tdist {dist:6} scale {s:6.3f} samples {nsamp:3}  log(nfa) {np.log10(nfa):8.4f}")
                     if dist == distances[-1]:
-                        plot_example(affine_set_1,affine_set_2,model1_points,model2_points,ran=1)
+                        plot_two_sets(affine_set_1, affine_set_2, model1_points, model2_points, ran=1)
                         plt.savefig(f"cloud_n_{n}_m{m}_dist_{dist:06.4f}.svg")
                         plt.close()
                 lognfa = np.log(nfa)
@@ -95,96 +95,6 @@ def parallel_vs_distance(m,n,
         rt = (ndist-i)*dt
         print(f'dt={dt:8.2f}s, {rt:8.2f}s to go')
     return  nfas/nseeds
-
-
-def parallel_vs_angle(m,n,
-                         angles,
-                         scales,
-                         npoints=100,
-                         prop=0.5,
-                         scatter_dist=None,
-                         bg_dist=None,
-                         bg_scale=1,
-                         scatter=0.1,
-                         seed=42,
-                         nsamp=10):
-    """
-    detect affine line
-    :return:
-    """
-    rng = random.default_rng(seed)
-    if scatter_dist is None:
-        scatter_dist = build_background_distribution(n-m)
-    if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
-
-    affine_set_1 = sim_affine_set(n,m,model_dist)
-    nscales = len(scales)
-    nang   = len(angles)
-    seeds = rng.integers(low=1, high=65535, size=nsamp)
-    nseeds = len(seeds)
-    nfas = np.zeros((nang,nscales))
-    for i,ang in enumerate(angles):
-        nmodel = int(prop*npoints)
-        nback  = npoints - nmodel
-        t0 = time.time()
-        affine_set_2 = build_affine_set_relative_to(affine_set_1, dist=0, angle=ang)
-        for seed in seeds:
-            model1_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
-            model2_points = sim_affine_cloud(affine_set_2, nmodel, model_dist, scatter_dist, scatter=scatter)
-            back_points  = bg_dist((nback, n))
-            model_points = np.concatenate((model1_points,model2_points))
-            _test_points = np.concatenate((model_points,back_points))
-            for j,s in enumerate(scales):
-                nfa = nfa_ks(_test_points, affine_set_1, m, m+1, distance_to_affine, s)
-                if seed == seeds[0]:
-                    #print(f"\tdist {dist:6} scale {s:6.3f} samples {nsamp:3}  log(nfa) {np.log10(nfa):8.4f}")
-                    if ang == angles[-1]:
-                        plot_example(affine_set_1,affine_set_2,model1_points,model2_points,ran=1)
-                        plt.savefig(f"cloud_n_{n}_m{m}_ang_{ang:06.4f}.svg")
-                        plt.close()
-                lognfa = np.log(nfa)
-                #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
-                nfas[i,j] += np.log(max(nfa,1e-40))
-        dt = time.time() - t0
-        rt = (nang-i)*dt
-        print(f'dt={dt:8.2f}s, {rt:8.2f}s to go')
-    return  nfas/nseeds
-
-
-def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
-    from matplotlib.colors import LightSource
-
-    X, Y = np.meshgrid(x,y)
-    Z = nfa.T
-    fig = plt.figure(figsize=(10,10))
-    ax3 = fig.add_subplot(projection='3d')
-    thresmap = ListedColormap(["red", "red", "blue", "blue"])
-
-    ls = LightSource(250, 70,hsv_max_val=1) # azimuth, alt
-    colors = thresmap(Z)
-    Znorm = Z-np.min(Z)
-    Znorm  /= np.max(Znorm)
-    shaded_colors = ls.shade_rgb(colors,Znorm,vert_exag=0.05)
-    ax3.plot_surface(X,Y,Z, edgecolor='black', lw=0.25,facecolors=shaded_colors,antialiased=False,shade=False)
-    ax3.set(xlabel=xlabel,ylabel=ylabel,zlabel='-log(NFA)',title=title)
-    ax3.view_init(elev=45,azim=120)
-    fname = title.replace(' ','_').lower()
-    plt.savefig(f'{fname}_3d.svg')
-    plt.close(fig)
-
-    #fig = plt.figure(figsize=(10,10))
-    #plt.contour(X, Y, Z, cmap=cmap)
-    #plt.title(title)
-    #plt.xlabel(xlabel)
-    #plt.ylabel(ylabel)
-    #plt.grid(True)
-    #plt.colorbar()
-    #plt.savefig(f'{fname}_contour.svg')
-    #plt.close(fig)
-
-
 
 def run_experiments():
     nsamp  = 50

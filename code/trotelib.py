@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from scipy import stats
+
 """
 TROTELIB
 ========
@@ -17,19 +19,22 @@ from numpy import linalg as la
 from scipy import stats
 from scipy import special
 
-def build_background_distribution(r,type='power'):
+def build_scatter_distribution(r, theta=0):
     """
     Construct a probability distribution over the ball of radius in ambient
     space R^r so that the distribution of the distance to the origin is uniform.
     This is a power law distribution with scale parameter s and power r-1
     :param r: dimension of the ball
     :param s: radius of the ball
+    :param theta: if > 0, adds an  e^{-qx factor} to the density, which introduces a decay.
+                since the support is [0,1], we need to correct for the truncated domain
     :return:
     """
-    if type == 'power':
+    if theta <= 0:
         return lambda size: np.random.power(r,size=size)
     else:
-        return None
+        return lambda size: np.random.power(r-theta,size=size)
+        #return lambda size: stats.gengamma.rvs(a=r,c=theta,size=size)
 
 def build_affine_set(list_of_points):
     """
@@ -189,7 +194,7 @@ if __name__ == "__main__":
     distro0 = lambda x: rng.uniform(size=x, low=0, high=1)
     affine_set  = sim_affine_set(n,m,distro0)
     d1 = lambda x: rng.uniform(size=x,low=-2,high=2)
-    d2 = build_background_distribution(n-m)
+    d2 = build_scatter_distribution(n - m)
     scatter = 0.02
     test_points = sim_affine_cloud(affine_set, N, d1, d2, scatter)
     plt.figure(figsize=(10,5))

@@ -12,7 +12,7 @@ from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 from  trotelib import *
-
+from troteplot import *
 import matplotlib.cm as cm
 
 
@@ -81,7 +81,7 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
     print("number of points:",Ns)
     rng = random.default_rng(seed)
     if scatter_dist is None:
-        scatter_dist = build_background_distribution(n-m)
+        scatter_dist = build_scatter_distribution(n - m)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
@@ -111,43 +111,6 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
     return  nfas/nseeds
 
 
-def model_vs_scale_and_proportion(m,n,N,props,scales,scatter_dist=None, bg_dist=None, bg_scale=1, scatter=0.1, nsamp=10, seed=42):
-    """
-    detect affine line
-    :return:
-    """
-    print("model vs scale and proportion of foreground/background points")
-    print("scales:",scales)
-    print("prportions:",props)
-
-    if scatter_dist is None:
-        scatter_dist = build_background_distribution(n-m)
-    if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
-
-    rng = random.default_rng(seed)
-
-    affine_set = sim_affine_set(n,m,model_dist)
-    nfas = np.zeros((len(props),len(scales)))
-    for i,p in enumerate(props):
-        nmodel = int(np.ceil(p*N))
-        nback  = N - nmodel
-        seeds = rng.integers(low=1,high=65535,size=nsamp)
-        nseeds = len(seeds)
-        for seed in seeds:
-            model_points = sim_affine_cloud(affine_set, nmodel, model_dist, scatter_dist, scatter=scatter)
-            back_points = bg_dist((nback, n))
-            _test_points = np.concatenate((model_points,back_points))
-            for j,s in enumerate(scales):
-                if seed == seeds[0]:
-                    print(f"\tprop {p:6.3f} scale {s:6.3f} samples {nsamp:3}")
-                nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
-                lognfa = np.log(max(nfa,1e-40))
-                #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
-                nfas[i,j] += lognfa
-    return nfas*(1/nseeds)
-
 def model_vs_scale_and_scatter(m,n,N,scatters,scales,scatter_dist=None, bg_dist=None, bg_scale=1,prop=0.5,nsamp=10,seed=42):
     """
     detect affine line
@@ -158,7 +121,7 @@ def model_vs_scale_and_scatter(m,n,N,scatters,scales,scatter_dist=None, bg_dist=
     print("scatters:",scatters)
 
     if scatter_dist is None:
-        scatter_dist = build_background_distribution(n-m)
+        scatter_dist = build_scatter_distribution(n - m)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
@@ -184,28 +147,6 @@ def model_vs_scale_and_scatter(m,n,N,scatters,scales,scatter_dist=None, bg_dist=
                 nfas[i,j] += lognfa
     return nfas*(1/nseeds)
 
-def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
-    X, Y = np.meshgrid(x,y)
-    Z = nfa.T
-    fig = plt.figure(figsize=(10,10))
-    ax3 = fig.add_subplot(projection='3d')
-    cmap = ListedColormap(["red", "red", "blue", "blue"])
-    ax3.plot_surface(X,Y,Z, edgecolor='black', lw=0.25,alpha=0.5,cmap=cmap,vmin=-10,vmax=10)
-    ax3.set(xlabel=xlabel,ylabel=ylabel,zlabel='-log(NFA)',title=title)
-    fname = title.replace(' ','_').lower()
-    plt.savefig(f'{fname}_3d.svg')
-    plt.close(fig)
-
-    #fig = plt.figure(figsize=(10,10))
-    #plt.contour(X, Y, Z, cmap=cmap)
-    #plt.title(title)
-    #plt.xlabel(xlabel)
-    #plt.ylabel(ylabel)
-    #plt.grid(True)
-    #plt.colorbar()
-    #plt.savefig(f'{fname}_contour.svg')
-    #plt.close(fig)
-
 #==========================================================================================
 
 import argparse
@@ -220,46 +161,15 @@ if __name__ == "__main__":
                     help="max number of points to simmulate")
     ap.add_argument("--scatter", type=float, default=0.1,
                     help="Proportion of scale of dispersion from affine set to scale of global point cloud")
-
     args = vars(ap.parse_args())
-    N    = args["maxn"]
     scatter = args["scatter"]
-
-    # cluster in 2D
-    m      = 0 # affine space dimension
-    n      = 2 # ambient dim
-    #model_vs_scale(m,n,N)
     nsamp  = 50
-    #Ns     = np.arange(N//10,N+N//10,step=N//10)
-    Ns     = np.round(np.logspace(6,10,base=2,num=25)).astype(int)
-    scales = np.logspace(-10,-2,base=2,num=25)
+    Ns     = np.round(np.logspace(6,10,base=2,num=50)).astype(int)
+    scales = np.logspace(-10,-2,base=2,num=50)
     def_scatter = 0.1
-    nfas   = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
-    ax     = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 2D cluster')
-    #
-    # line in 2D
-    #
-    n = 2
-    m = 1
-    nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
-    ax   = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 2D line')
-    #
-    # cluster in 3D
-    n    = 3
-    m    = 0 # affine space dimension
-    nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
-    ax   = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 3D cluster')
-    #
-    # line in 3D
-    #
-    m = 1
-    n = 3
-    nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
-    ax = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 3D line')
-    #
-    # plane in 3D
-    #
-    m = 2
-    n = 3
-    nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
-    ax = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,'NFA vs scales and npoints on 3D plane')
+    for n in (2,3):
+        for m in range(n):
+            print(f"\n=======================\nn={n} m={m}")
+            print("=======================")
+            nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
+            ax   = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,f'NFA vs scales and npoints n={n} m={m}')
