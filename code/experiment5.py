@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-
+import os
 import numpy as np
 from numpy import random
 from numpy import linalg as la
@@ -43,34 +43,32 @@ def model_vs_scale_and_distro(m,n,scatter_distros,scales, scatter=0.1, bg_dist=N
             back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
-                if seed == seeds[0]:
-                    print(f"\tscatter distro no. {i} scale {s:6.3f} samples {nsamp:3}")
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
-                lognfa = np.log(max(nfa,1e-40))
-                nfas[i,j] += lognfa
+                nfas[i,j] += nfa < 1 # lognfa
     return nfas*(1/nseeds)
 
 
 def run_experiments():
     nsamp  = 50
     from scipy import stats
-    scales = np.arange(0.01,0.41,step=0.01)#np.logspace(-10,-2,base=2,num=40)
+    scales = np.arange(0.01,0.41,step=0.01)
     def_scatter = 0.1
     for n in (2,3):
         for m in range(n):
-            factors = np.arange(0.0,(n-m)*0.8,step=0.01)
+            factors = np.arange(0.0,(n-m)*0.8,step=0.02)
             print(f"\n=======================\nn={n} m={m}")
             print("=======================")
             distros = [build_scatter_distribution(n - m, f) for f in factors]
             x = np.linspace(0,1,100)
-#            for i,d in enumerate(distros):
-#                plt.figure(i)
-#                y = d(10000)
-#                plt.hist(y)
-#                plt.xlim(0,1.1)
-#                plt.show()
-            nfas   = model_vs_scale_and_distro(m,n,distros,scales,scatter=def_scatter,nsamp=nsamp,npoints=100)
-            ax     = plot_scores_2d(factors,'exponential factor',scales,'analysis scale',nfas,f'NFA vs decay factor n={n} m={m}')
+            fbase  = (f'NFA vs scale and decay factor n={n} m={m}').lower().replace(' ','_').replace('=','_')
+            if not os.path.exists(fbase+'_z.txt'):
+                nfas = model_vs_scale_and_distro(m, n, distros, scales, scatter=def_scatter, nsamp=nsamp)
+                np.savetxt(fbase + '_z.txt', nfas)
+                np.savetxt(fbase + '_x.txt', scales)
+                np.savetxt(fbase + '_y.txt', factors)
+            else:
+                nfas = np.loadtxt(fbase+'_z.txt')
+            ax     = plot_scores_img(factors,'exponential factor',scales,'analysis scale',nfas,f'NFA vs decay factor n={n} m={m}')
 
 #==========================================================================================
 

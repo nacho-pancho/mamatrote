@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import time
+import os
 
 import numpy as np
 from numpy import random
@@ -76,9 +77,6 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
     detect affine line
     :return:
     """
-    print("model vs scale and number of points")
-    print("scales:",scales)
-    print("number of points:",Ns)
     rng = random.default_rng(seed)
     if scatter_dist is None:
         scatter_dist = build_scatter_distribution(n - m)
@@ -99,53 +97,12 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
             back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
-                if seed == seeds[0]:
-                    print(f"\tN {N:6} scale {s:6.3f} samples {nsamp:3}")
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
-                lognfa = np.log(nfa)
-                #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
-                nfas[i,j] += np.log(max(nfa,1e-40))
+                nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
         dt = time.time() - t0
         rt = (len(Ns)-i)*dt
         #print('dt=',dt,'remaining time=',rt)
     return  nfas/nseeds
-
-
-def model_vs_scale_and_scatter(m,n,N,scatters,scales,scatter_dist=None, bg_dist=None, bg_scale=1,prop=0.5,nsamp=10,seed=42):
-    """
-    detect affine line
-    :return:
-    """
-    print("model vs scale and different model scatters")
-    print("scales:",scales)
-    print("scatters:",scatters)
-
-    if scatter_dist is None:
-        scatter_dist = build_scatter_distribution(n - m)
-    if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
-
-    rng = random.default_rng(seed)
-    affine_set = sim_affine_set(n,m,model_dist)
-    nfas = np.zeros((len(scatters),len(scales)))
-    for i,scat in enumerate(scatters):
-        nmodel = int(np.ceil(prop*N))
-        nback  = N - nmodel
-        seeds = rng.integers(low=1,high=65535,size=nsamp)
-        nseeds = len(seeds)
-        for seed in seeds:
-            model_points = sim_affine_cloud(affine_set, nmodel, model_dist, scatter_dist, scatter=scat)
-            back_points = bg_dist((nback, n))
-            _test_points = np.concatenate((model_points,back_points))
-            for j,s in enumerate(scales):
-                if seed == seeds[0]:
-                    print(f"\tscatter {scat:6.3f} scale {s:6.3f} samples {nsamp:3}")
-                nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
-                lognfa = np.log(max(nfa,1e-40))
-                #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
-                nfas[i,j] += lognfa
-    return nfas*(1/nseeds)
 
 #==========================================================================================
 
@@ -163,13 +120,20 @@ if __name__ == "__main__":
                     help="Proportion of scale of dispersion from affine set to scale of global point cloud")
     args = vars(ap.parse_args())
     scatter = args["scatter"]
-    nsamp  = 50
-    Ns     = np.round(np.logspace(6,10,base=2,num=50)).astype(int)
-    scales = np.logspace(-10,-2,base=2,num=50)
-    def_scatter = 0.1
+    nsamp  = 25
+    Ns     = np.round(np.logspace(6,10,base=2,num=40)).astype(int)
+    scales = np.logspace(-10,-2,base=2,num=40)
     for n in (2,3):
         for m in range(n):
             print(f"\n=======================\nn={n} m={m}")
             print("=======================")
-            nfas = model_vs_scale_and_npoints(m,n,Ns,scales,scatter=def_scatter,nsamp=nsamp)
-            ax   = plot_scores_2d(Ns,'number of points',scales,'analysis scale',nfas,f'NFA vs scales and npoints n={n} m={m}')
+            fbase  = (f'NFA vs scale and npoints n={n} m={m}').lower().replace(' ','_').replace('=','_')
+            if not os.path.exists(fbase+'_z.txt'):
+                nfas = model_vs_scale_and_npoints(m,n,Ns,scales,nsamp=nsamp)
+                np.savetxt(fbase + '_z.txt', nfas)
+                np.savetxt(fbase + '_x.txt', scales)
+                np.savetxt(fbase + '_y.txt', Ns)
+            else:
+                nfas = np.loadtxt(fbase+'_z.txt')
+            ax = plot_scores_img(Ns, 'number of points', scales, 'analysis scale', nfas,
+                                f'NFA vs scales and npoints n={n} m={m}')

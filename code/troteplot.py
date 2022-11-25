@@ -54,12 +54,27 @@ def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
     colors = thresmap(Z)
     Znorm = Z-np.min(Z)
     Znorm  /= np.max(Znorm)
-    shaded_colors = ls.shade_rgb(colors,Znorm,vert_exag=0.05)
+    shaded_colors = ls.shade_rgb(colors,Znorm,vert_exag=0.02)
     ax3.plot_surface(X,Y,Z, edgecolor='black', lw=0.25,facecolors=shaded_colors,antialiased=False,shade=False)
     ax3.set(xlabel=xlabel,ylabel=ylabel,zlabel='-log(NFA)',title=title)
     ax3.view_init(elev=45,azim=120)
-    fname = title.replace(' ','_').lower()
+    fname = title.lower().replace(' ','_').replace('=','_')
     plt.savefig(f'{fname}_3d.svg')
+    plt.close(fig)
+
+
+def plot_scores_img(y,ylabel,x,xlabel,nfa,title):
+    #detmap = ListedColormap(colors=["red", "yellow", "cyan", "blue"])
+    #detmap = LinearSegmentedColormap.from_list("pepe",colors=["red", "yellow", "cyan", "blue"])
+    detmap = LinearSegmentedColormap.from_list("pepe",colors=[(0,"black"), (1,"blue")])
+    fig = plt.figure(figsize=(10,10))
+    plt.imshow(np.flipud(nfa), cmap='gray', extent=[x[0], x[-1], y[0], y[-1]], aspect='auto')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    #plt.colorbar()
+    fname = title.lower().replace(' ','_').replace('=','_')
+    plt.savefig(f'{fname}_img.png')
     plt.close(fig)
 
 

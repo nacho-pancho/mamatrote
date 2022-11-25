@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-
+import os
 import numpy as np
 from numpy import random
 from numpy import linalg as la
@@ -15,30 +15,6 @@ from  trotelib import *
 from troteplot import *
 
 import matplotlib.cm as cm
-
-
-def plot_example(affine_set_1,affine_set_2,points_1,points_2,ran):
-    fig = plt.figure(figsize=(12,12))
-    n = points_1.shape[1]
-    if n == 2:
-        ax = fig.add_subplot()
-        plot_set(ax, affine_set_1, color1='red', color2='red')
-        plot_set(ax, affine_set_2, color1='blue', color2='blue')
-        ax.scatter(points_1[:,0],points_1[:,1],color='orange')
-        ax.scatter(points_2[:,0],points_2[:,1],color='cyan')
-        #ax.xlim(-ran,ran)
-        #ax.ylim(-ran,ran)
-    elif n == 3:
-        ax = fig.add_subplot(projection='3d')
-        plot_set(ax, affine_set_1, color1='red', color2='red')
-        plot_set(ax, affine_set_2, color1='blue', color2='blue')
-        ax.scatter(points_1[:,0],points_1[:,1],points_1[:,2], color='orange')
-        ax.scatter(points_2[:,0],points_2[:,1],points_1[:,2], color='cyan')
-        ax.view_init(elev=70,azim=120)
-        #ax.xlim(-ran,ran)
-        #ax.ylim(-ran,ran)
-        #ax.zlim(-ran,ran)
-
 
 
 def parallel_vs_distance(m,n,
@@ -88,9 +64,7 @@ def parallel_vs_distance(m,n,
                         plot_two_sets(affine_set_1, affine_set_2, model1_points, model2_points, ran=1)
                         plt.savefig(f"cloud_n_{n}_m{m}_dist_{dist:06.4f}.svg")
                         plt.close()
-                lognfa = np.log(nfa)
-                #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
-                nfas[i,j] += np.log(max(nfa,1e-40))
+                nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
         dt = time.time() - t0
         rt = (ndist-i)*dt
         print(f'dt={dt:8.2f}s, {rt:8.2f}s to go')
@@ -105,8 +79,15 @@ def run_experiments():
         for m in range(n):
             print(f"\n=======================\nn={n} m={m}")
             print("=======================")
-            nfas   = parallel_vs_distance(m,n,distances,scales,scatter=def_scatter,nsamp=nsamp,npoints=100)
-            ax     = plot_scores_2d(distances,'distance',scales,'analysis scale',nfas,f'NFA vs distance n={n} m={m}')
+            fbase  = (f'NFA vs scale and distance n={n} m={m}').lower().replace(' ','_').replace('=','_')
+            if not os.path.exists(fbase+'_z.txt'):
+                nfas = parallel_vs_distance(m, n, distances, scales, nsamp=nsamp)
+                np.savetxt(fbase + '_z.txt', nfas)
+                np.savetxt(fbase + '_x.txt', scales)
+                np.savetxt(fbase + '_y.txt', distances)
+            else:
+                nfas = np.loadtxt(fbase+'_z.txt')
+            ax     = plot_scores_img(distances,'distance',scales,'analysis scale',nfas,f'NFA vs distance n={n} m={m}')
 
 #==========================================================================================
 

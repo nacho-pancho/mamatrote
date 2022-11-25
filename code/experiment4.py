@@ -15,7 +15,7 @@ from  trotelib import *
 from troteplot import *
 
 import matplotlib.cm as cm
-
+import os
 
 def plot_example(affine_set_1,affine_set_2,points_1,points_2,ran):
     fig = plt.figure(figsize=(12,12))
@@ -87,9 +87,7 @@ def parallel_vs_angle(m,n,
                         plot_two_sets(affine_set_1, affine_set_2, model1_points, model2_points, ran=1)
                         plt.savefig(f"cloud_n_{n}_m{m}_ang_{ang:06.4f}.svg")
                         plt.close()
-                lognfa = np.log(nfa)
-                #print(f'N={N:8} scale={s:8.6f} NFA={lognfa:8.6f}')
-                nfas[i,j] += np.log(max(nfa,1e-40))
+                nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
         dt = time.time() - t0
         rt = (nang-i)*dt
         print(f'dt={dt:8.2f}s, {rt:8.2f}s to go')
@@ -98,15 +96,21 @@ def parallel_vs_angle(m,n,
 
 def run_experiments():
     nsamp  = 50
-    def_scatter = 0.1
     scales = np.arange(0.01,0.41,step=0.01)#np.logspace(-10,-2,base=2,num=40)
-    angles = np.arange(0,np.pi,step=np.pi/30)
+    angles = np.arange(0,np.pi,step=np.pi/40)
     for n in (2,3):
         for m in range(n):
             print(f"\n=======================\nn={n} m={m}")
             print("=======================")
-            nfas   = parallel_vs_angle(m,n,angles,scales,scatter=def_scatter,nsamp=nsamp,npoints=100)
-            ax     = plot_scores_2d(angles,'angles',scales,'analysis scale',nfas,f'NFA vs angle n={n} m={m}')
+            fbase  = (f'NFA vs scale and angle n={n} m={m}').lower().replace(' ','_').replace('=','_')
+            if not os.path.exists(fbase+'_z.txt'):
+                nfas = parallel_vs_angle(m, n, angles, scales, nsamp=nsamp)
+                np.savetxt(fbase + '_z.txt', nfas)
+                np.savetxt(fbase + '_x.txt', scales)
+                np.savetxt(fbase + '_y.txt', angles)
+            else:
+                nfas = np.loadtxt(fbase+'_z.txt')
+            ax     = plot_scores_img(angles,'angles',scales,'analysis scale',nfas,f'NFA vs angle n={n} m={m}')
 
 #==========================================================================================
 
