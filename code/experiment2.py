@@ -51,25 +51,10 @@ def model_vs_scale_and_scatter(m,n,scatters,scales,scatter_dist=None, bg_dist=No
 
 import argparse
 
-if __name__ == "__main__":
-    plt.close('all')
-    #
-    # command line arguments
-    #
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--maxn", type=int, default=1000,
-                    help="max number of points to simmulate")
-    ap.add_argument("--scatter", type=float, default=0.1,
-                    help="Proportion of scale of dispersion from affine set to scale of global point cloud")
-
-    args = vars(ap.parse_args())
-    N    = args["maxn"]
-    scatter = args["scatter"]
+def run_experiment():
     nsamp  = 50
-    Ns     = np.round(np.logspace(6,10,base=2,num=25)).astype(int)
     scales = np.logspace(-10,-2,base=2,num=40)
     scatters = np.logspace(-2,-1,num=40,base=10)
-    def_scatter = 0.1
     for n in (2, 3):
         for m in range(n):
             print(f"\n=======================\nn={n} m={m}")
@@ -79,8 +64,12 @@ if __name__ == "__main__":
                 nfas = model_vs_scale_and_scatter(m, n, scatters, scales, nsamp=nsamp)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
-                np.savetxt(fbase + '_y.txt', Ns)
+                np.savetxt(fbase + '_y.txt', scatters)
             else:
                 nfas = np.loadtxt(fbase+'_z.txt')
             ax     = plot_scores_img(scatters,'model scatter',scales,'analysis scale',nfas,f'NFA vs scale and scatter n={n} m={m}')
 
+
+if __name__ == "__main__":
+    plt.close('all')
+    run_experiment()

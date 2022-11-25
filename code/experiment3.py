@@ -91,23 +91,7 @@ def run_experiments():
 
 #==========================================================================================
 
-import argparse
 
 if __name__ == "__main__":
     plt.close('all')
-    #
-    # command line arguments
-    #
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--maxn", type=int, default=1000,
-                    help="max number of points to simmulate")
-    ap.add_argument("--scatter", type=float, default=0.1,
-                    help="Proportion of scale of dispersion from affine set to scale of global point cloud")
-    args = vars(ap.parse_args())
-    N    = args["maxn"]
-    scatter = args["scatter"]
-    m = 1
-    n = 2
-    N = 100
-    #test_relative(m,n,N)
     run_experiments()
