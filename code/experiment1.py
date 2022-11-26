@@ -16,6 +16,48 @@ from  trotelib import *
 from troteplot import *
 import matplotlib.cm as cm
 
+def model_vs_scale_and_npoints(m,n,
+                         npointses,
+                         scales,
+                         prop=0.5,
+                         scatter_dist=None,
+                         bg_dist=None,
+                         bg_scale=1,
+                         scatter=0.1,
+                         seed=42,
+                         nsamp=10):
+    """
+    detect affine line
+    :return:
+    """
+    rng = random.default_rng(seed)
+    if scatter_dist is None:
+        scatter_dist = build_scatter_distribution(n - m)
+    if bg_dist is None:
+        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
+    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
+
+    affine_set_1 = sim_affine_set(n,m,model_dist)
+    nscales = len(scales)
+    nnp   = len(npointses)
+    seeds = rng.integers(low=1, high=65535, size=nsamp)
+    nseeds = len(seeds)
+    nfas = np.zeros((nnp,nscales))
+    for i,npoints in enumerate(npointses):
+        nmodel = int(prop*npoints)
+        nback  = npoints - nmodel
+        t0 = time.time()
+        for seed in seeds:
+            model_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
+            back_points  = bg_dist((nback, n))
+            _test_points = np.concatenate((model_points,back_points))
+            for j,s in enumerate(scales):
+                nfa = nfa_ks(_test_points, affine_set_1, m, m+1, distance_to_affine, s)
+                nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
+        dt = time.time() - t0
+        rt = (nnp-i)*dt
+        print(f'dt={dt:8.2f}s, {rt:8.2f}s to go')
+    return  nfas/nseeds
 
 def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_dist=None, bg_scale=1, scatter=0.1,seed=42,nsamp=10):
     """
@@ -52,9 +94,10 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
 #==========================================================================================
 
 def run_experiment():
-    nsamp  = 25
-    Ns     = np.round(np.logspace(6,10,base=2,num=40)).astype(int)
-    scales = np.logspace(-10,-2,base=2,num=40)
+    nsamp  = 50
+    detail = 100
+    Ns     = np.round(np.linspace(50,500,detail)).astype(int)
+    scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
     for n in (2,3):
         for m in range(n):
             print(f"\n=======================\nn={n} m={m}")
