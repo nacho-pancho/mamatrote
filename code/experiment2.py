@@ -53,13 +53,12 @@ import argparse
 
 def run_experiment():
     nsamp  = 25
-    detail = 40
+    detail = 50
     scales   = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
     scatters = np.linspace(0.01,0.4,detail)
     for n in (2, 3):
         for m in range(n):
-            print(f"\n=======================\nn={n} m={m}")
-            print("=======================")
+            print(f"n={n} m={m}")
             fbase  = (f'NFA vs scale and scatter n={n} m={m}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt'):
                 nfas = model_vs_scale_and_scatter(m, n, scatters, scales, nsamp=nsamp)
@@ -72,5 +71,6 @@ def run_experiment():
 
 
 if __name__ == "__main__":
+    print("NFA vs scatter scale")
     plt.close('all')
     run_experiment()

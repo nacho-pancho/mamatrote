@@ -73,14 +73,13 @@ def parallel_vs_distance(m,n,
 
 def run_experiments():
     nsamp  = 25
-    detail = 40
+    detail = 50
     def_scatter = 0.1
     scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
     distances = def_scatter*np.linspace(0.5,8,detail)
     for n in (2,3):
         for m in range(n):
-            print(f"\n=======================\nn={n} m={m}")
-            print("=======================")
+            print(f"n={n} m={m}")
             fbase  = (f'NFA vs scale and distance n={n} m={m}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt'):
                 nfas = parallel_vs_distance(m, n, distances, scales, nsamp=nsamp, scatter=def_scatter)
@@ -95,5 +94,6 @@ def run_experiments():
 
 
 if __name__ == "__main__":
+    print("NFA vs distance between second structure")
     plt.close('all')
     run_experiments()

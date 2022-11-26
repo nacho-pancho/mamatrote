@@ -88,31 +88,4 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
                 nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
         dt = time.time() - t0
         rt = (len(Ns)-i)*dt
-        #print('dt=',dt,'remaining time=',rt)
-    return  nfas/nseeds
-
-#==========================================================================================
-
-def run_experiment():
-    nsamp  = 50
-    detail = 100
-    Ns     = np.round(np.linspace(50,500,detail)).astype(int)
-    scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
-    for n in (2,3):
-        for m in range(n):
-            print(f"\n=======================\nn={n} m={m}")
-            print("=======================")
-            fbase  = (f'NFA vs scale and npoints n={n} m={m}').lower().replace(' ','_').replace('=','_')
-            if not os.path.exists(fbase+'_z.txt'):
-                nfas = model_vs_scale_and_npoints(m,n,Ns,scales,nsamp=nsamp)
-                np.savetxt(fbase + '_z.txt', nfas)
-                np.savetxt(fbase + '_x.txt', scales)
-                np.savetxt(fbase + '_y.txt', Ns)
-            else:
-                nfas = np.loadtxt(fbase+'_z.txt')
-            ax = plot_scores_img(Ns, 'number of points', scales, 'analysis scale', nfas,
-                                f'NFA vs scales and npoints n={n} m={m}')
-
-if __name__ == "__main__":
-    plt.close('all')
-    run_experiment()
+        #print('dt=',dtresment()

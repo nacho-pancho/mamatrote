@@ -56,54 +56,49 @@ def parallel_vs_angle(m,n,
         nmodel = int(prop*npoints)
         nback  = npoints - nmodel
         t0 = time.time()
-    # rotate W and last coord of V
-    if ang != 0:
-        R      = np.eye(n)
-        R[m-1:,m-1] = R[m,m] = np.cos(ang)
-        R[m-1,m] = np.sin(ang)
-        R[m,m-1] = -np.sin(ang)
-        if m > 0:
-            V2 = V @ R
+        # rotate W and last coord of V
+        if ang != 0:
+            R      = np.eye(n)
+            R[m-1:,m-1] = R[m,m] = np.cos(ang)
+            R[m-1,m] = np.sin(ang)
+            R[m,m-1] = -np.sin(ang)
+            if m > 0:
+                V2 = V @ R
+            else:
+                V2 = V
+            W2 = W @ R
+            affine_set_2 = (c,V2,W2)
         else:
-            V2 = V
-        W2 = W @ R
-        affine_set_2 = (c,V2,W2)
-    else:
-        affine_set_2 = affine_set_1
-    print('V',V)
-    print('W',W)
-    print('V2',V2)
-    print('W2',W2)
-    for seed in seeds:
-        model1_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
-        model2_points = sim_affine_cloud(affine_set_2, nmodel, model_dist, scatter_dist, scatter=scatter)
-        back_points  = bg_dist((nback, n))
-        model_points = np.concatenate((model1_points,model2_points))
-        _test_points = np.concatenate((model_points,back_points))
-        for j,s in enumerate(scales):
-            nfa = nfa_ks(_test_points, affine_set_1, m, m+1, distance_to_affine, s)
-            if seed == seeds[0]:
-                #print(f"\tdist {dist:6} scale {s:6.3f} samples {nsamp:3}  log(nfa) {np.log10(nfa):8.4f}")
-                if ang == angles[-1]:
-                    plot_two_sets(affine_set_1, affine_set_2, model1_points, model2_points, ran=1)
-                    plt.savefig(f"cloud_n_{n}_m{m}_ang_{ang:06.4f}.svg")
-                    plt.close()
-            nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
-    dt = time.time() - t0
-    rt = (nang-i)*dt
-    print(f'dt={dt:8.2f}s, {rt:8.2f}s to go')
+            affine_set_2 = affine_set_1
+        for seed in seeds:
+            model1_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
+            model2_points = sim_affine_cloud(affine_set_2, nmodel, model_dist, scatter_dist, scatter=scatter)
+            back_points  = bg_dist((nback, n))
+            model_points = np.concatenate((model1_points,model2_points))
+            _test_points = np.concatenate((model_points,back_points))
+            for j,s in enumerate(scales):
+                nfa = nfa_ks(_test_points, affine_set_1, m, m+1, distance_to_affine, s)
+                if seed == seeds[0]:
+                    #print(f"\tdist {dist:6} scale {s:6.3f} samples {nsamp:3}  log(nfa) {np.log10(nfa):8.4f}")
+                    if ang == angles[nang//2]:
+                        plot_two_sets(affine_set_1, affine_set_2, model1_points, model2_points, ran=1)
+                        plt.savefig(f"cloud_n_{n}_m{m}_ang_{ang:06.4f}.svg")
+                        plt.close()
+                nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
+        dt = time.time() - t0
+        rt = (nang-i)*dt
+        print(f'dt={dt:8.2f}s, {rt:8.2f}s to go')
     return  nfas/nseeds
 
 
 def run_experiments():
-    nsamp  = 20
-    detail = 20
+    nsamp  = 25
+    detail = 50
     scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
     angles = np.arange(0,np.pi,step=np.pi/40)
     for n in (2,3):
         for m in range(1,n):
-            print(f"\n=======================\nn={n} m={m}")
-            print("=======================")
+            print(f"n={n} m={m}")
             fbase  = (f'NFA vs scale and angle n={n} m={m}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt'):
                 nfas = parallel_vs_angle(m, n, angles, scales, nsamp=nsamp)
@@ -119,6 +114,7 @@ def run_experiments():
 import argparse
 
 if __name__ == "__main__":
+    print("NFA vs angle between second structure")
     plt.close('all')
     #
     # command line arguments

@@ -49,15 +49,14 @@ def model_vs_scale_and_distro(m,n,scatter_distros,scales, scatter=0.1, bg_dist=N
 
 
 def run_experiments():
-    nsamp  = 50
+    nsamp  = 25
     from scipy import stats
     scales = np.arange(0.01,0.41,step=0.01)
     def_scatter = 0.1
     for n in (2,3):
         for m in range(n):
             factors = np.arange(0.0,(n-m)*0.8,step=0.02)
-            print(f"\n=======================\nn={n} m={m}")
-            print("=======================")
+            print(f"n={n} m={m}")
             distros = [build_scatter_distribution(n - m, f) for f in factors]
             x = np.linspace(0,1,100)
             fbase  = (f'NFA vs scale and decay factor n={n} m={m}').lower().replace(' ','_').replace('=','_')
@@ -72,23 +71,7 @@ def run_experiments():
 
 #==========================================================================================
 
-import argparse
-
 if __name__ == "__main__":
+    print("NFA vs decay factor")
     plt.close('all')
-    #
-    # command line arguments
-    #
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--maxn", type=int, default=1000,
-                    help="max number of points to simmulate")
-    ap.add_argument("--scatter", type=float, default=0.1,
-                    help="Proportion of scale of dispersion from affine set to scale of global point cloud")
-    args = vars(ap.parse_args())
-    N    = args["maxn"]
-    scatter = args["scatter"]
-    m = 1
-    n = 2
-    N = 100
-    #test_relative(m,n,N)
     run_experiments()
