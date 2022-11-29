@@ -92,22 +92,37 @@ def parallel_vs_angle(m,n,
 
 
 def run_experiments():
-    nsamp  = 25
-    detail = 50
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--nsamples", type=int, default=10,
+                    help="path indir  where to find original files")
+    ap.add_argument("--npoints", type=int, default=100,
+                    help="text file where input files are specified; each entry should be of the form roll/image.tif")
+    ap.add_argument("--scatter", type=float, default=0.1,
+                    help="Cut this number of pixels from each side of image before analysis.")
+    ap.add_argument("--detail", type=int, default=40,
+                    help="Add this number of pixels to each side of the segmented line / block.")
+    args = vars(ap.parse_args())
+    nsamp   = args["nsamples"]
+    detail  = args["detail"]
+    npoints = args["npoints"]
+    scatter = args["scatter"]
+
     scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
     angles = np.arange(0,np.pi,step=np.pi/40)
     for n in (2,3):
         for m in range(1,n):
             print(f"n={n} m={m}")
-            fbase  = (f'NFA vs scale and angle n={n} m={m}').lower().replace(' ','_').replace('=','_')
+            fbase  = (f'NFA vs scale and angle n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt'):
-                nfas = parallel_vs_angle(m, n, angles, scales, nsamp=nsamp)
+                nfas = parallel_vs_angle(m, n, angles, scales, nsamp=nsamp,npoints=npoints,scatter=scatter)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
                 np.savetxt(fbase + '_y.txt', angles)
             else:
                 nfas = np.loadtxt(fbase+'_z.txt')
-            ax     = plot_scores_img(angles,'angles',scales,'analysis scale',nfas,f'NFA vs angle n={n} m={m}')
+            ax     = plot_scores_img(angles,'angles',
+                                     scales,'analysis scale',
+                                     nfas,f'NFA vs angle n={n} m={m} s={scatter} N={npoints}')
 
 #==========================================================================================
 

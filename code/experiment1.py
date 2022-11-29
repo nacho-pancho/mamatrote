@@ -89,3 +89,44 @@ def model_vs_scale_and_npoints(m,n,Ns,scales, prop=0.5, scatter_dist=None, bg_di
         dt = time.time() - t0
         rt = (len(Ns)-i)*dt
         #print('dt=',dtresment()
+
+
+import argparse
+
+def run_experiment():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--nsamples", type=int, default=10,
+                    help="path indir  where to find original files")
+    ap.add_argument("--npoints", type=int, default=100,
+                    help="text file where input files are specified; each entry should be of the form roll/image.tif")
+    ap.add_argument("--scatter", type=float, default=0.1,
+                    help="Cut this number of pixels from each side of image before analysis.")
+    ap.add_argument("--detail", type=int, default=40,
+                    help="Add this number of pixels to each side of the segmented line / block.")
+    args = vars(ap.parse_args())
+    nsamp   = args["nsamples"]
+    detail  = args["detail"]
+    npoints = args["npoints"]
+    scatter = args["scatter"]
+
+    Ns     = np.round(np.linspace(50,500,detail)).astype(int)
+    scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
+    for n in (2,3):
+        for m in range(n):
+            print(f"n={n} m={m}")
+            fbase  = (f'NFA vs scale and npoints n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
+            if not os.path.exists(fbase+'_z.txt'):
+                nfas = model_vs_scale_and_npoints(m,n,Ns,scales,nsamp=nsamp,scatter=scatter)
+                np.savetxt(fbase + '_z.txt', nfas)
+                np.savetxt(fbase + '_x.txt', scales)
+                np.savetxt(fbase + '_y.txt', Ns)
+            else:
+                nfas = np.loadtxt(fbase+'_z.txt')
+            ax = plot_scores_img(Ns, 'number of points',
+                                 scales, 'analysis scale', nfas,
+                                 f'NFA vs scales and npoints n={n} m={m} s={scatter}')
+
+if __name__ == "__main__":
+    print("NFA vs number of points")
+    plt.close('all')
+    run_experiment()

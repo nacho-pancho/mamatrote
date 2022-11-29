@@ -153,7 +153,7 @@ def sim_affine_cloud(affine_set, num_points, model_distro, scatter_distro, scatt
     a0 = np.random.normal(size=(num_points,n-m)) # anisotropic
     norms = np.linalg.norm(a0,axis=1)
     deltas = scatter*scatter_distro(num_points)
-    a = np.diag(deltas/norms) @ a0
+    a = np.outer(deltas/norms, np.ones(n-m)) * a0
     if len(V) > 0:
         x =  c + b @ V + a @ W
         return x

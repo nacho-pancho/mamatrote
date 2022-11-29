@@ -47,27 +47,42 @@ def model_vs_scale_and_distro(m,n,scatter_distros,scales, scatter=0.1, bg_dist=N
                 nfas[i,j] += nfa < 1 # lognfa
     return nfas*(1/nseeds)
 
+import argparse
 
 def run_experiments():
-    nsamp  = 25
-    from scipy import stats
-    scales = np.arange(0.01,0.41,step=0.01)
-    def_scatter = 0.1
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--nsamples", type=int, default=10,
+                    help="path indir  where to find original files")
+    ap.add_argument("--npoints", type=int, default=100,
+                    help="text file where input files are specified; each entry should be of the form roll/image.tif")
+    ap.add_argument("--scatter", type=float, default=0.1,
+                    help="Cut this number of pixels from each side of image before analysis.")
+    ap.add_argument("--detail", type=int, default=40,
+                    help="Add this number of pixels to each side of the segmented line / block.")
+    args = vars(ap.parse_args())
+    nsamp   = args["nsamples"]
+    detail  = args["detail"]
+    npoints = args["npoints"]
+    scatter = args["scatter"]
+
+    scales = np.arange(scatter/10,scatter*4,detail)
     for n in (2,3):
         for m in range(n):
-            factors = np.arange(0.0,(n-m)*0.8,step=0.02)
             print(f"n={n} m={m}")
+            factors = np.linspace(0.0,(n-m)*0.8,detail)
             distros = [build_scatter_distribution(n - m, f) for f in factors]
             x = np.linspace(0,1,100)
-            fbase  = (f'NFA vs scale and decay factor n={n} m={m}').lower().replace(' ','_').replace('=','_')
+            fbase  = (f'NFA vs scale and decay factor n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt'):
-                nfas = model_vs_scale_and_distro(m, n, distros, scales, scatter=def_scatter, nsamp=nsamp)
+                nfas = model_vs_scale_and_distro(m, n, distros, scales, nsamp=nsamp,npoints=npoints,scatter=scatter)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
                 np.savetxt(fbase + '_y.txt', factors)
             else:
                 nfas = np.loadtxt(fbase+'_z.txt')
-            ax     = plot_scores_img(factors,'exponential factor',scales,'analysis scale',nfas,f'NFA vs decay factor n={n} m={m}')
+            ax     = plot_scores_img(factors,'exponential factor',
+                                     scales,'analysis scale',
+                                     nfas,f'NFA vs decay factor n={n} m={m} s={scatter} N={npoints}')
 
 #==========================================================================================
 
