@@ -30,8 +30,8 @@ def parallel_vs_angle(m,n,
                          seed=42,
                          nsamp=10):
     """
-    detect affine line
-    :return:
+    see wheter we detect the structure or not depending on the effect of a similar structure
+    which is oblique to it with a given factor
     """
     rng = random.default_rng(seed)
     if scatter_dist is None:

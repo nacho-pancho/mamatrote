@@ -19,7 +19,7 @@ from troteplot import *
 
 def model_vs_scale_and_scatter(m,n,scatters,scales,scatter_dist=None, bg_dist=None, bg_scale=1,npoints=100,prop=0.5,nsamp=10,seed=42):
     """
-    detect affine line
+    see wheter we detect the structure or not depending on how spread the points are from the target structure
     :return:
     """
     if scatter_dist is None:

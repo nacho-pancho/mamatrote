@@ -29,7 +29,8 @@ def parallel_vs_distance(m,n,
                          seed=42,
                          nsamp=10):
     """
-    detect affine line
+    see wheter we detect the structure when another similar structure is parallel to it
+    at a given distance.
     :return:
     """
     rng = random.default_rng(seed)

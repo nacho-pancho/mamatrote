@@ -36,6 +36,7 @@ def build_scatter_distribution(r, theta=0):
         return lambda size: np.random.power(r-theta,size=size)
         #return lambda size: stats.gengamma.rvs(a=r,c=theta,size=size)
 
+
 def build_affine_set(list_of_points):
     """
 
@@ -98,7 +99,6 @@ def build_affine_set_relative_to(affine_set,dist=0,angle=0):
     return (c2,V2,W2)
 
 
-
 def distance_to_affine(list_of_points, affine_set, P=None):
     """
     Compute the distance from a set of points to the subspace
@@ -131,7 +131,7 @@ def sim_affine_set(ambient_dim,affine_dim,distro):
     return build_affine_set(V)
 
 
-def sim_affine_cloud(affine_set, num_points, model_distro, scatter_distro, scatter):
+def sim_affine_cloud(_affine_set, _num_points, scatter = 1.0, model_distro=None, scatter_distro=None):
     """
     given an affine set, simulate a cloud of points such
     that the distribution of their distance to the given affine
@@ -146,20 +146,57 @@ def sim_affine_cloud(affine_set, num_points, model_distro, scatter_distro, scatt
     :return: num_points simulated points whose distance from the affine set
              is distributed as fdist
     """
-    c,V,W = affine_set
+    c,V,W = _affine_set
+    m,n = V.shape
+    rng = random.default_rng()
+    if model_distro is None:
+        model_distro = lambda x: rng.uniform(size=x, low=-scatter*10, high=scatter*10)
+    if scatter_distro is None:
+        scatter_distro = build_scatter_distribution(n - m)
+
     n = len(c)
     m = len(V)
-    b = model_distro((num_points,m))
-    a0 = np.random.normal(size=(num_points,n-m)) # anisotropic
-    norms = np.linalg.norm(a0,axis=1)
-    deltas = scatter*scatter_distro(num_points)
-    a = np.outer(deltas/norms, np.ones(n-m)) * a0
+    b = model_distro((_num_points,m))
+    a0 = np.random.normal(size=(_num_points,n-m)) # anisotropic
+    _norms = np.linalg.norm(a0,axis=1)
+    _deltas = scatter*scatter_distro(_num_points)
+    a = np.outer(_deltas/_norms, np.ones(n-m)) * a0
     if len(V) > 0:
         x =  c + b @ V + a @ W
         return x
     else:
         x =  c + a @ W
         return x
+
+def sim_background_points(npoints,n,bg_scale=1, bg_dist=None,seed=42):
+    rng = random.default_rng(seed=42)
+    if bg_dist is None:
+        bg_dist = lambda x: rng.uniform(size=x)
+    return bg_dist((npoints, n))
+
+def ransac_affine(points, m, k, seed=42):
+    """
+    Create k candidate models from random samples of m+1 n-dimensional points
+    :param points: input data points
+    :param m: dimension of affine space
+    :param k: number of samples to draw
+    :return: a list of candidate affine models
+    """
+    N,n = points.shape
+    rng = random.default_rng(seed=seed)
+    models = list()
+    idx = range(N)
+    for i in range(k):
+        chosen_ones = rng.choice(idx,size=m+1,replace=False)
+        list_of_points = [points[r,:] for r in chosen_ones ]
+        sampled_model = build_affine_set(list_of_points)
+        models.append(sampled_model)
+    return models
+
+def find_aligned_points(points, affine_set, distance, scale):
+    distances = distance(points,affine_set)
+    N,n = points.shape
+    return list([points[i] for i in range(N) if distances[i] < scale])
 
 def nfa_ks(data, model, model_dim, model_nparam, distance, scale):
     """

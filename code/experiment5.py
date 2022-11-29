@@ -21,7 +21,7 @@ import matplotlib.cm as cm
 
 def model_vs_scale_and_distro(m,n,scatter_distros,scales, scatter=0.1, bg_dist=None, bg_scale=1,prop=0.5,nsamp=10,seed=42,npoints=100):
     """
-    detect affine line
+    see wheter we detect the structure or not depending on how concentrated the points are around the structure
     :return:
     """
     if bg_dist is None:

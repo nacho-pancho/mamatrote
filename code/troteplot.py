@@ -5,19 +5,20 @@ import mpl_toolkits.mplot3d as mplot3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import numpy as np
 
-def plot_set_2d(ax,affine_set,color1,color2):
+def plot_set_2d(ax,affine_set,color1,color2,show_ortho=False,length=1):
 
     c,V,W = affine_set
     m,n = V.shape
 
-    ax.scatter([c[0]], [c[1]], color=color1)
+    ax.scatter([c[0]], [c[1]], color=color1, s = 1)
 
     for i in range(m):
-        ax.plot((c[0], c[0] + V[i, 0]), (c[1], c[1] + V[i, 1]), color=color1)
-    for j in range(n-m):
-        ax.plot((c[0], c[0] + W[j,0]), (c[1], c[1] + W[j, 1]), color=color2)
+        ax.plot((c[0], c[0] + length*V[i, 0]), (c[1], c[1] + length*V[i, 1]), color=color1,lw=0.5)
+    if show_ortho:
+        for j in range(n-m):
+            ax.plot((c[0], c[0] + length*W[j,0]), (c[1], c[1] + length*W[j, 1]), color=color2,lw=0.5)
 
-def plot_set_3d(ax,affine_set,color1,color2):
+def plot_set_3d(ax,affine_set,color1,color2,show_ortho=False,length=1):
 
     c,V,W = affine_set
     m,n = V.shape
@@ -25,20 +26,21 @@ def plot_set_3d(ax,affine_set,color1,color2):
     ax.scatter([c[0]], [c[1]], [c[2]], color=color1)
 
     for i in range(m):
-        ax.plot((c[0], c[0] + V[i, 0]), (c[1], c[1] + V[i, 1]), (c[2], c[2] + V[i, 2]), color=color1)
-    for j in range(n-m):
-        ax.plot((c[0], c[0] + W[j,0]), (c[1], c[1] + W[j, 1]), (c[2], c[2] + W[j, 2]), color=color2)
+        ax.plot((c[0], c[0] + length*V[i, 0]), (c[1], c[1] + length*V[i, 1]), (c[2], c[2] + length*V[i, 2]), color=color1)
+    if show_ortho:
+        for j in range(n-m):
+            ax.plot((c[0], c[0] + length*W[j,0]), (c[1], c[1] + length*W[j, 1]), (c[2], c[2] + length*W[j, 2]), color=color2)
 
-def plot_set(ax,affine_set,color1,color2):
+def plot_set(ax,affine_set,color1,color2,show_ortho=False,length=1):
     """
     up to dimension 3
     """
     c,V,W = affine_set
     m,n = V.shape
     if n == 2:
-        plot_set_2d(ax,affine_set,color1,color2)
+        plot_set_2d(ax,affine_set,color1,color2,show_ortho,length)
     elif n == 3:
-        plot_set_3d(ax,affine_set,color1,color2)
+        plot_set_3d(ax,affine_set,color1,color2,show_ortho,length)
 
 
 def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
