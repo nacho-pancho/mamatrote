@@ -160,8 +160,6 @@ def sim_affine_cloud(_affine_set, _num_points, scatter = 1.0, model_distro=None,
     a0 = np.random.normal(size=(_num_points,n-m)) # anisotropic
     _norms = np.linalg.norm(a0,axis=1)
     _samples = scatter_distro(_num_points)
-    print(_samples)
-    print(scatter)
     _deltas = scatter*_samples
     a = np.outer(_deltas/_norms, np.ones(n-m)) * a0
     if len(V) > 0:
@@ -201,7 +199,7 @@ def find_aligned_points(points, affine_set, distance, scale):
     N,n = points.shape
     return list([points[i] for i in range(N) if distances[i] < scale])
 
-def nfa_ks(data, model, model_dim, model_nparam, distance, scale):
+def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None):
     """
     Compute the Kolmogorov-Smirnoff-based NFA score for a set of points w.r.t. a model (for a given scale).
     
@@ -213,14 +211,17 @@ def nfa_ks(data, model, model_dim, model_nparam, distance, scale):
     :param scale: scale of the analysis; here it is the width of the bands
     :return: the NFA detection score for the model given the data points and the analysis scale
     """
+    if ntests is None:
+        ntests = special.binom(len(data), model_nparam)
+
     ambient_dim = len(data[0])        # infer ambient dimension from first data point
     res_dim = ambient_dim - model_dim # infer orthogonal space dimension 
     distances = list(d/scale for d in distance(data, model) if d <= scale)
-    NT = special.binom(len(data), model_nparam)
-    if len(distances) <= 0:
-        return NT
+    if len(distances) <= model_nparam+1: # hay problemas con KStest con muy pocos puntos!
+        return 1.1 # absurdo
     _, pvalue = stats.kstest(distances, stats.powerlaw(res_dim).cdf, alternative='greater')
-    return NT * pvalue
+    print(len(distances),pvalue,ntests*pvalue)
+    return ntests * pvalue
 
 
 #==========================================================================================

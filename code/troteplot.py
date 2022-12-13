@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+"""
+pretty plotting datasets and stuff
+"""
+
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import mpl_toolkits.mplot3d as mplot3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib import patches
 import numpy as np
 
 def plot_set_2d(ax,affine_set,color1,color2,show_ortho=False,length=1):
@@ -41,6 +46,31 @@ def plot_set(ax,affine_set,color1,color2,show_ortho=False,length=1):
         plot_set_2d(ax,affine_set,color1,color2,show_ortho,length)
     elif n == 3:
         plot_set_3d(ax,affine_set,color1,color2,show_ortho,length)
+
+def plot_set_2d_poly(ax,affine_set,length,width,color):
+    """
+    up to dimension 3
+    """
+    c,V,W = affine_set
+    m,n = V.shape
+    if m == 0: # ball
+        ax.add_patch(patches.Circle(c,width))
+    elif m == 1:
+        a = (c[0] - length*V[0, 0], c[1] - length*V[0, 1])
+        b = (c[0] + length*V[0, 0], c[1] + length * V[0, 1])
+        #plt.plot((a[0],b[0]),(a[1],b[1]))
+        #width = 0
+        a1 = (a[0] - width * W[0,0], a[1] - width*W[0,1])
+        a2 = (a[0] + width * W[0, 0], a[1] + width * W[0, 1])
+        b1 = (b[0] - width * W[0, 0], b[1] - width * W[0, 1])
+        b2 = (b[0] + width * W[0, 0], b[1] + width * W[0, 1])
+        plt.plot((a1[0],b1[0]),(a1[1],b1[1]),color=color)
+        plt.plot((a2[0],b2[0]),(a2[1],b2[1]),color=color)
+        plt.plot((a1[0],a2[0]),(a1[1],a2[1]),color=color)
+        plt.plot((b1[0],b2[0]),(b1[1],b2[1]),color=color)
+        x = (a1[0],a2[0],b2[0],b1[0])
+        y = (a1[1],a2[1],b2[1],b1[1])
+        ax.fill( x, y, color=color )
 
 
 def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):

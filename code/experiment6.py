@@ -27,43 +27,63 @@ def ransac_baseline_test(points,scale,nsamp):
     """
     :return:
     """
-    fig = plt.figure(figsize=(8,8))
-    ax = fig.add_subplot()
+    fig = plt.figure(figsize=(14,6))
+    #ax = fig.add_subplot()
+    ax = plt.subplot(1,2,1)
+    ax.scatter(points[:, 0], points[:, 1], alpha=1, s=2)
+    plt.title('dataset')
+    ax = plt.subplot(1,2,2)
     N,n = points.shape
     m = 1
     candidates = ransac_affine(points,m,nsamp)
     nfas = list()
-    cmap = LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
+    cmap = cm.get_cmap("viridis")#LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
+    nfas= list()
     for cand in candidates:
-        #print(cand)
-        nfa = nfa_ks(points, cand, m, m+1, distance_to_affine, scale)
-        nfas.append(nfa)
-        aux = 1 - np.exp(-nfa)
-        print(nfa,aux)
-        color=cmap(aux)
-        plot_set(ax,cand,color1=color,color2=color,length=2)
-        if nfa < 1:
-            a_points = np.array(find_aligned_points(points,cand,distance_to_affine,scale))
-            plt.scatter(a_points[:, 0], a_points[:, 1], color=color, s=1, alpha=0.1)
+        nfa = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, ntests=nsamp)
+        nfas.append(-np.log10(nfa))
 
-        #if nfa < 1:
-        #    plot_set(ax,cand,color1="red",color2="red",length=2)
-        #else:
-        #    plot_set(ax, cand, color1=(.5,.5,.5,.25),color2=(.5,.5,.5,.25))
-    #print(nfas)
+    max_nfa = np.max(nfas)
+    min_nfa = np.min(nfas)
+    print(min_nfa,max_nfa)
+    cand_nfas = zip(candidates,nfas)
+    det = 0
+    for cs in cand_nfas:
+        cand,nfa = cs
+        color=cmap(nfa/max_nfa)
+        if nfa > 0:
+            #plot_set(ax, cand, color1=color, color2=color, length=2)
+            color = (*color[:3],0.2)
+            plot_set_2d_poly(ax, cand, 50, scale, color)
+            a_points = np.array(find_aligned_points(points,cand,distance_to_affine,scale))
+            plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
+            det += 1
+    print('det',det,'not det',len(candidates)-det)
+    plt.scatter(a_points[0, 0], a_points[0, 1], alpha=1,s=0.01) # hack para que el colorbar no quede transparente
+    plt.colorbar()
+    xmin = np.min([p[0] for p in points])
+    xmax = np.max([p[0] for p in points])
+    ymin = np.min([p[1] for p in points])
+    ymax = np.max([p[1] for p in points])
+    xlen = xmax-xmin
+    ylen = ymax-ymin
+    maxlen = max(xlen,ylen)
+    plt.xlim(xmin,xmin+maxlen)
+    plt.ylim(ymin,ymin+maxlen)
+    plt.title('detected models')
     plt.show()
 
 import argparse
 
 def run_experiment():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--nsamples", type=int, default=500,
+    ap.add_argument("--nsamples", type=int, default=200,
                     help="number of RANSAC samples to draw")
     ap.add_argument("--npoints", type=int, default=1000,
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
     ap.add_argument("--scatter", type=float, default=0.2,
                     help="How far are the model points scattered from the ground truth element.")
-    ap.add_argument("--scale", type=float, default=0.4,
+    ap.add_argument("--scale", type=float, default=0.3,
                     help="Analysis scale.")
     args = vars(ap.parse_args())
     nransac = args["nsamples"]
