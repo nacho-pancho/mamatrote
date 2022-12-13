@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-
+"""
+Test various functions of the trotellib (R) acronym-freen detection framework.
+"""
 import numpy as np
 from numpy import random
 from numpy import linalg as la
@@ -42,12 +44,13 @@ def test_models_3d():
     N = 200
     n = 3
     m = 1
+    scatter = 1
     rng = random.default_rng(42)
     distro0 = lambda x: rng.uniform(size=x, low=0, high=1)
     affine_set = sim_affine_set(n, m, distro0)
-    d1 = lambda x: rng.uniform(size=x, low=0, high=2)
+    d1 = lambda x: rng.uniform(size=x, low=0, high=scatter*10)
     d2 = lambda x: rng.uniform(size=x, high=0.1)
-    fg_points = sim_affine_cloud(affine_set, N, d1, d2)
+    fg_points = sim_affine_cloud(affine_set, N, scatter, d1, d2)
     bg_points = rng.uniform(size=(N,n), low=-2,high=2)
     test_points = np.concatenate((fg_points, bg_points))
     x_0, V, W = affine_set
@@ -56,8 +59,8 @@ def test_models_3d():
     w = u + W[0]
     fig = plt.figure(figsize=(10,10))
     ax = fig.add_subplot(projection="3d")
-    ax.scatter(bg_points[:,0],bg_points[:,1],bg_points[:,2],color='k',alpha=0.1)
-    ax.scatter(fg_points[:,0],fg_points[:,1],fg_points[:,2],color='b',alpha=0.1)
+    ax.scatter(bg_points[:,0],bg_points[:,1],bg_points[:,2],color='k',alpha=0.1,s=4)
+    ax.scatter(fg_points[:,0],fg_points[:,1],fg_points[:,2],color='b',alpha=0.1,s=4)
     ax.plot((u[0],v[0]),(u[1],v[1]),(u[2],v[2]),'r')
     ax.plot((u[0],w[0]),(u[1],w[1]),(u[2],w[2]),'g')
     plt.show()

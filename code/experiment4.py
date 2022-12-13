@@ -16,19 +16,38 @@ from troteplot import *
 
 import matplotlib.cm as cm
 import os
+"""
+This experiment investigates the ability to detect an affine structure
+when there is another confounding structure at a given angle to the first one.
+The results are shown as a function of:
+a) the analysis scale, which is a parameter of the framework and
+b) the angle between the target and the confounding structure.
+
+The other problem parameters are:
+
+* proportion of model/background points is 50/50.
+* number of points defaults to 100
+  distance to the affine set is uniform regardless of the dimension
+* the experiment is repeated 10 times for 10 different random seeds
+* scatter distribution is so that the distribution of the
+  distance to the affine set is uniform regardless of the dimension
+* the scatter distance from a point to the structure defaults to 0.1
+
+Note: the target structure parameters are known (perfectly).
+"""
 
 
-def parallel_vs_angle(m,n,
-                         angles,
-                         scales,
-                         npoints=100,
-                         prop=0.5,
-                         scatter_dist=None,
-                         bg_dist=None,
-                         bg_scale=1,
-                         scatter=0.1,
-                         seed=42,
-                         nsamp=10):
+def oblique_vs_angle(m, n,
+                     angles,
+                     scales,
+                     npoints=100,
+                     prop=0.5,
+                     scatter_dist=None,
+                     bg_dist=None,
+                     bg_scale=1,
+                     scatter=0.1,
+                     seed=42,
+                     nsamp=10):
     """
     see wheter we detect the structure or not depending on the effect of a similar structure
     which is oblique to it with a given factor
@@ -114,7 +133,7 @@ def run_experiments():
             print(f"n={n} m={m}")
             fbase  = (f'NFA vs scale and angle n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt'):
-                nfas = parallel_vs_angle(m, n, angles, scales, nsamp=nsamp,npoints=npoints,scatter=scatter)
+                nfas = oblique_vs_angle(m, n, angles, scales, nsamp=nsamp, npoints=npoints, scatter=scatter)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
                 np.savetxt(fbase + '_y.txt', angles)

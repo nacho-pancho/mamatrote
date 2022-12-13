@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
+"""
+This is the base experiment for the RANSAC-based detection scheme.
+Here, instead of testing for all the possible combinations of points in the
+dataset that originate different candidate sets, we sample R sets of m+1 the points
+(with reposition, where m is the dimension of the affine set) and compute the significance score
+on each of them.
 
+"""
 import time
 import os
 

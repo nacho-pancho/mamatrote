@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+"""
+This experiment investigates the ability to detect affine structures
+as a function of:
+a) the analysis scale, which is a parameter of the framework and
+b) the total number of data points, which is a property of the input data
+
+The other problem parameters are:
+* proportion of model/background points is 50/50.
+* scatter distribution is so that the distribution of the
+  distance to the affine set is uniform regardless of the dimension
+* the scatter distance from a point to the structure defaults to 0.1
+* the experiment is repeated 10 times for 10 different random seeds
+
+Note: the target structure parameters are known (perfectly).
+
+"""
 
 import time
 import os
