@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-This is the base experiment for the RANSAC-based detection scheme.
-Here, instead of testing for all the possible combinations of points in the
-dataset that originate different candidate sets, we sample R sets of m+1 the points
-(with reposition, where m is the dimension of the affine set) and compute the significance score
-on each of them.
-
+Here we test a greedy version of the RANSAC/NFA algorithm.
+Given a set of points, and a set of candidates, we find the most significant model.
+We save it and remove all its nearby points from the dataset.
+We repeat this until there are no new significant sets.
 """
 import time
 import os
@@ -23,56 +21,53 @@ from  trotelib import *
 from troteplot import *
 import matplotlib.cm as cm
 
-def ransac_baseline_test(points,scale,nsamp):
+
+def detect_uniscale(points,scale,nsamp):
+    N,n = points.shape
+    m = 1
+    candidates = ransac_affine(points,m,nsamp)
+    cand_points = np.copy(points)
+    sig_models = list()
+    sig_scores = list()
+    for i in range(1000):
+        ntests = len(cand_points)
+        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=ntests) for cand in candidates]
+        idx = np.argmin(nfas)
+        print(i,len(cand_points),nfas[idx])
+        if nfas[idx] >= 0.1: # probando con umbral más exigente
+            break
+        best_cand = candidates[idx]
+        sig_models.append(best_cand)
+        sig_scores.append(nfas[idx])
+        best_points = find_aligned_points(cand_points,best_cand,distance_to_affine,scale)
+        #
+        # remove aligned points
+        #
+        aux1 = [tuple(c) for c in cand_points]
+        aux2 = [tuple(c) for c in best_points]
+        cand_points = np.array(list(set(aux1).difference(set(aux2))))
+    return sig_models,sig_scores
+
+
+def ransac_nfa_plot(points,models,scores,scale):
     """
     :return:
     """
     fig = plt.figure(figsize=(14,6))
-    #ax = fig.add_subplot()
     ax = plt.subplot(1,2,1)
     ax.scatter(points[:, 0], points[:, 1], alpha=1, s=2)
     plt.title('dataset')
     ax = plt.subplot(1,2,2)
-    N,n = points.shape
-    m = 1
-    candidates = ransac_affine(points,m,nsamp)
-    nfas = list()
-    cmap = cm.get_cmap("viridis")#LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
-    nfas= list()
-    counts = list()
-    for cand in candidates:
-        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, ntests=nsamp, return_counts=True)
-        nfas.append(-np.log10(nfa))
-        counts.append(count)
-    #
-    # for debug:
-    #
-    idx = np.argsort(counts)
-    nfas_sorted = np.array(nfas)[idx]
-    counts_sorted = np.array(counts)[idx]
-    for nfa,cnt in zip(nfas_sorted,counts_sorted):
-        print('npoints',cnt,'nfa',nfa)
-    #
-    # plot stuff
-    #
-    max_nfa = np.max(nfas)
-    min_nfa = np.min(nfas)
-    print(min_nfa,max_nfa)
-    cand_nfas = zip(candidates,nfas)
-    det = 0
-    for cs in cand_nfas:
-        cand,nfa = cs
-        color=cmap(nfa/max_nfa)
-        if nfa > 0:
-            #plot_set(ax, cand, color1=color, color2=color, length=2)
-            color = (*color[:3],0.2)
-            plot_set_2d_poly(ax, cand, 50, scale, color)
-            a_points = np.array(find_aligned_points(points,cand,distance_to_affine,scale))
-            plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
-            det += 1
-    print('det',det,'not det',len(candidates)-det)
-    plt.scatter(a_points[0, 0], a_points[0, 1], alpha=1,s=0.01) # hack para que el colorbar no quede transparente
-    plt.colorbar()
+    max_score = np.max(scores)
+    cmap = cm.get_cmap("jet")
+    for model,score in zip(models,scores):
+        color = cmap(score/max_score)
+        #plot_set(ax, cand, color1=color, color2=color, length=2)
+        color = (*color[:3],0.2)
+        plot_set_2d_poly(ax, model, 50, scale, color)
+        a_points = np.array(find_aligned_points(points,model,distance_to_affine,scale))
+        plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
+        plt.scatter(a_points[0, 0], a_points[0, 1], alpha=1,s=0.01) # hack para que el colorbar no quede transparente
     xmin = np.min([p[0] for p in points])
     xmax = np.max([p[0] for p in points])
     ymin = np.min([p[1] for p in points])
@@ -89,9 +84,9 @@ import argparse
 
 def run_experiment():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--nsamples", type=int, default=200,
+    ap.add_argument("--nsamples", type=int, default=500,
                     help="number of RANSAC samples to draw")
-    ap.add_argument("--npoints", type=int, default=1000,
+    ap.add_argument("--npoints", type=int, default=200,
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
     ap.add_argument("--scatter", type=float, default=0.2,
                     help="How far are the model points scattered from the ground truth element.")
@@ -128,7 +123,7 @@ def run_experiment():
         rng = random.default_rng(seed=42)
         model_distro = lambda x: rng.uniform(size=x, low=-10, high=10)
         model_cloud = sim_affine_cloud(model, npermodel, scatter=scatter,model_distro=model_distro)
-        plt.scatter(model_cloud[:, 0], model_cloud[:, 1],alpha=1,s=2)
+        plt.scatter(model_cloud[:, 0], model_cloud[:, 1],alpha=1,s=4)
         fg_points.append(model_cloud)
     all_points = fg_points
     all_points.append(bg_points)
@@ -136,7 +131,9 @@ def run_experiment():
     fbase  = (f'baseline RANSAC test for a fixed pattern of 3 lines o a plane').lower().replace(' ','_').replace('=','_')
     plt.grid(True)
     plt.show()
-    nfas = ransac_baseline_test(all_points,scale=scale,nsamp=nransac)
+    models,scores = detect_uniscale(all_points,scale=scale,nsamp=nransac)
+    scores = [-np.log10(s) for s in scores]
+    ransac_nfa_plot(all_points,models,scores,scale)
 
 
 if __name__ == "__main__":

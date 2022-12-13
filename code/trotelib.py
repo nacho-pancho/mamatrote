@@ -199,7 +199,7 @@ def find_aligned_points(points, affine_set, distance, scale):
     N,n = points.shape
     return list([points[i] for i in range(N) if distances[i] < scale])
 
-def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None):
+def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None,return_counts=False):
     """
     Compute the Kolmogorov-Smirnoff-based NFA score for a set of points w.r.t. a model (for a given scale).
     
@@ -217,11 +217,17 @@ def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None):
     ambient_dim = len(data[0])        # infer ambient dimension from first data point
     res_dim = ambient_dim - model_dim # infer orthogonal space dimension 
     distances = list(d/scale for d in distance(data, model) if d <= scale)
-    if len(distances) <= model_nparam+1: # hay problemas con KStest con muy pocos puntos!
-        return 1.1 # absurdo
+    nclose = len(distances)
+    if nclose <= model_nparam+1: # hay problemas con KStest con muy pocos puntos!
+        if return_counts:
+            return 10, nclose
+        else:
+            return 10
     _, pvalue = stats.kstest(distances, stats.powerlaw(res_dim).cdf, alternative='greater')
-    print(len(distances),pvalue,ntests*pvalue)
-    return ntests * pvalue
+    if return_counts:
+        return ntests * pvalue, nclose
+    else:
+        return ntests * pvalue
 
 
 #==========================================================================================
