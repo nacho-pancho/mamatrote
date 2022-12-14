@@ -32,10 +32,12 @@ def detect_uniscale(points,scale,nsamp):
     sig_points = list()
     for i in range(1000):
         ntests = len(cand_points)
+        if ntests <= m+1:
+            break
         nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=ntests) for cand in candidates]
         best_idx = np.argmin(nfas)
         best_nfa  = nfas[best_idx]
-        print(i,len(cand_points),best_nfa)
+        #print('model',i,'npoints',len(cand_points),'nfa',best_nfa)
         if best_nfa >= 0.1: # probando con umbral más exigente
             break
         best_cand = candidates[best_idx]
@@ -51,6 +53,22 @@ def detect_uniscale(points,scale,nsamp):
         aux2 = [tuple(c) for c in best_points]
         cand_points = np.array(list(set(aux1).difference(set(aux2))))
     return sig_models,sig_scores,sig_points
+
+
+def detect_multiscale(points, scale, factor, nsamp, depth=0):
+    models, scores, p2 = detect_uniscale(points,scale,nsamp)
+    nmodels = len(models)
+    print('\t'*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    if nmodels == 0:
+        return ()
+    else:
+        model_nodes = list()
+        for m,s,p in zip(models,scores,p2):
+            pmat = np.array(p)
+            children = detect_multiscale(pmat,scale*factor,factor,nsamp,depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,pmat,children) )
+        return model_nodes
+
 
 
 
@@ -105,9 +123,28 @@ def run_experiment():
     fbase  = (f'baseline RANSAC test for a fixed pattern of 3 lines o a plane').lower().replace(' ','_').replace('=','_')
     plt.grid(True)
     plt.show()
-    models,scores,model_points = detect_uniscale(all_points,scale=scale,nsamp=nransac)
-    scores = [-np.log10(s) for s in scores]
-    plot_uniscale_ransac_nfa(all_points, models, scores, model_points, scale)
+    nodes = detect_multiscale(all_points,scale=20,factor=0.5,nsamp=nransac)
+
+    fig = plt.figure(figsize=(14,6))
+    ax = plt.subplot(1,2,1)
+    ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
+    plt.title('dataset')
+
+    ax = plt.subplot(1,2,2)
+    for node in nodes:
+        plot_multiscale_ransac_nfa(ax,node)
+    xmin = 0.9*np.min([p[0] for p in all_points])
+    xmax = 1.1*np.max([p[0] for p in all_points])
+    ymin = 0.9*np.min([p[1] for p in all_points])
+    ymax = 1.1*np.max([p[1] for p in all_points])
+    xlen = (xmax-xmin)
+    ylen = (ymax-ymin)
+    maxlen = max(xlen,ylen)
+    plt.xlim(xmin,xmin+maxlen)
+    plt.ylim(ymin,ymin+maxlen)
+    plt.title('detected models')
+    plt.show()
+
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ def plot_set(ax,affine_set,color1,color2,show_ortho=False,length=1):
     elif n == 3:
         plot_set_3d(ax,affine_set,color1,color2,show_ortho,length)
 
-def plot_set_2d_poly(ax,affine_set,length,width,color):
+def plot_set_2d_poly(ax,affine_set,length,width,color,border=False):
     """
     up to dimension 3
     """
@@ -56,6 +56,10 @@ def plot_set_2d_poly(ax,affine_set,length,width,color):
     if m == 0: # ball
         ax.add_patch(patches.Circle(c,width))
     elif m == 1:
+        if border:
+            edgecolor = color
+        else:
+            edgecolor = (0,0,0,0)
         a = (c[0] - length*V[0, 0], c[1] - length*V[0, 1])
         b = (c[0] + length*V[0, 0], c[1] + length * V[0, 1])
         #plt.plot((a[0],b[0]),(a[1],b[1]))
@@ -64,13 +68,15 @@ def plot_set_2d_poly(ax,affine_set,length,width,color):
         a2 = (a[0] + width * W[0, 0], a[1] + width * W[0, 1])
         b1 = (b[0] - width * W[0, 0], b[1] - width * W[0, 1])
         b2 = (b[0] + width * W[0, 0], b[1] + width * W[0, 1])
-        plt.plot((a1[0],b1[0]),(a1[1],b1[1]),color=color)
-        plt.plot((a2[0],b2[0]),(a2[1],b2[1]),color=color)
-        plt.plot((a1[0],a2[0]),(a1[1],a2[1]),color=color)
-        plt.plot((b1[0],b2[0]),(b1[1],b2[1]),color=color)
+        if border:
+            plt.plot((a1[0],b1[0]),(a1[1],b1[1]),color=color)
+            plt.plot((a2[0],b2[0]),(a2[1],b2[1]),color=color)
+            plt.plot((a1[0],a2[0]),(a1[1],a2[1]),color=color)
+            plt.plot((b1[0],b2[0]),(b1[1],b2[1]),color=color)
         x = (a1[0],a2[0],b2[0],b1[0])
         y = (a1[1],a2[1],b2[1],b1[1])
-        ax.fill( x, y, color=color )
+        ax.fill( x, y, color=color,edgecolor=edgecolor )
+        #ax.fill( x, y, color=color)
 
 
 def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
@@ -131,3 +137,52 @@ def plot_two_sets(affine_set_1, affine_set_2, points_1, points_2, ran):
         #ax.xlim(-ran,ran)
         #ax.ylim(-ran,ran)
         #ax.zlim(-ran,ran)
+
+
+def plot_uniscale_ransac_nfa(all_points, models, scores, model_points, scale):
+    """
+    :return:
+    """
+    fig = plt.figure(figsize=(14,6))
+    ax = plt.subplot(1,2,1)
+    ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
+    plt.title('dataset')
+    ax = plt.subplot(1,2,2)
+    max_score = np.max(scores)
+    cmap = cm.get_cmap("jet")
+    for model,score,mpoints in zip(models,scores,model_points):
+        color = cmap(score/max_score)
+        #plot_set(ax, cand, color1=color, color2=color, length=2)
+        color = (*color[:3],0.2)
+        plot_set_2d_poly(ax, model, 50, scale, color)
+        mpoints = np.array(mpoints)
+        plt.scatter(mpoints[:, 0], mpoints[:, 1], color="gray", s=4, alpha=0.5)
+        plt.scatter(mpoints[0, 0], mpoints[0, 1], alpha=1,s=0.01) # hack para que el colorbar no quede transparente
+    xmin = np.min([p[0] for p in all_points])
+    xmax = np.max([p[0] for p in all_points])
+    ymin = np.min([p[1] for p in all_points])
+    ymax = np.max([p[1] for p in all_points])
+    xlen = xmax-xmin
+    ylen = ymax-ymin
+    maxlen = max(xlen,ylen)
+    plt.xlim(xmin,xmin+maxlen)
+    plt.ylim(ymin,ymin+maxlen)
+    plt.title('detected models')
+    plt.show()
+
+
+def plot_multiscale_ransac_nfa(ax,model_node):
+    """
+    :return:
+    """
+    cmap = cm.get_cmap("jet")
+    _scale, _model, _score, _points, _children = model_node
+    print('plotting ',_scale,_score,len(_points),len(_children))
+    #_color = cmap(min(_scale, 1))
+    #_color = (*_color[:3],0.1)
+    _color = (0,0,0,0.05)
+    plot_set_2d_poly(ax, _model, 50, _scale,_color )
+    plt.scatter(_points[:, 0], _points[:, 1], color="gray", s=4, alpha=0.5)
+    plt.scatter(_points[0, 0], _points[0, 1], alpha=1, s=0.01)  # hack para que el colorbar no quede transparente
+    for node in _children:
+        plot_multiscale_ransac_nfa(ax,node)
