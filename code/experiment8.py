@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Here we test a greedy version of the RANSAC/NFA algorithm.
-Given a set of points, and a set of candidates, we find the most significant model.
-We save it and remove all its nearby points from the dataset.
-We repeat this until there are no new significant sets.
+Here we combine the greedy version of the RANSAC/NFA algorithm
+with a multiscale approach. This generates a hierarchy of models where
+the topmost model(s) (may be more than 1) correspond to the coarsest (larger) scale
+and then the children contain submodels found within their parent points when
+analyzed at a smaller scale. This goes on until no significant models are found at a given scale.
 """
 import time
 import os
