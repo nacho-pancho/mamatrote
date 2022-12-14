@@ -139,15 +139,10 @@ def plot_two_affine_sets(affine_set_1, affine_set_2, points_1, points_2, ran):
         #ax.zlim(-ran,ran)
 
 
-def plot_uniscale_ransac_affine(all_points, models, scores, model_points, scale):
+def plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale):
     """
     :return:
     """
-    fig = plt.figure(figsize=(14,6))
-    ax = plt.subplot(1,2,1)
-    ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
-    plt.title('dataset')
-    ax = plt.subplot(1,2,2)
     max_score = np.max(scores)
     cmap = cm.get_cmap("jet")
     for model,score,mpoints in zip(models,scores,model_points):
@@ -168,7 +163,6 @@ def plot_uniscale_ransac_affine(all_points, models, scores, model_points, scale)
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.show()
 
 
 def plot_multiscale_ransac_affine(ax, model_node):
@@ -178,14 +172,13 @@ def plot_multiscale_ransac_affine(ax, model_node):
     cmap = cm.get_cmap("jet")
     _scale, _model, _score, _points, _children = model_node
     print('plotting ',_scale,_score,len(_points),len(_children))
-    #_color = cmap(min(_scale, 1))
-    #_color = (*_color[:3],0.1)
     _color = (0,0,0,0.05)
     plot_affine_set_2d_poly(ax, _model, 50, _scale, _color)
     plt.scatter(_points[:, 0], _points[:, 1], color="gray", s=4, alpha=0.5)
     plt.scatter(_points[0, 0], _points[0, 1], alpha=1, s=0.01)  # hack para que el colorbar no quede transparente
     for node in _children:
         plot_multiscale_ransac_affine(ax, node)
+    return ax
 
 def plot_ring():
     n, radii = 50, [.7, .95]

@@ -122,15 +122,17 @@ def run_experiment():
     all_points = np.concatenate(all_points) # turn list of matrices into one matrix
     fbase  = (f'baseline RANSAC test for a fixed pattern of 3 lines o a plane').lower().replace(' ','_').replace('=','_')
     plt.grid(True)
-    plt.show()
+    plt.savefig('multiscale_dataset.svg')
+    plt.close()
     nodes = detect_multiscale(all_points,scale=20,factor=0.5,nsamp=nransac)
 
-    fig = plt.figure(figsize=(14,6))
-    ax = plt.subplot(1,2,1)
-    ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
-    plt.title('dataset')
+    fig = plt.figure(figsize=(6,6))
+    #ax = plt.subplot(1,2,1)
+    #ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
+    #plt.title('dataset')
 
-    ax = plt.subplot(1,2,2)
+    #ax = plt.subplot(1,2,2)
+    ax = fig.add_subplot()
     for node in nodes:
         plot_multiscale_ransac_affine(ax, node)
     xmin = 0.9*np.min([p[0] for p in all_points])
@@ -143,7 +145,8 @@ def run_experiment():
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.show()
+    plt.savefig('multiscale_nfa.svg')
+    plt.close()
 
 
 

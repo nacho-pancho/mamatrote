@@ -103,12 +103,21 @@ def run_experiment():
     all_points.append(bg_points)
     all_points = np.concatenate(all_points) # turn list of matrices into one matrix
     fbase  = (f'baseline RANSAC test for a fixed pattern of 3 lines o a plane').lower().replace(' ','_').replace('=','_')
-    plt.grid(True)
-    plt.show()
+    plt.savefig('uniscale_dataset.svg')
+    plt.close()
     models,scores,model_points = detect_uniscale(all_points,scale=scale,nsamp=nransac)
     scores = [-np.log10(s) for s in scores]
-    plot_uniscale_ransac_affine(all_points, models, scores, model_points, scale)
 
+    fig = plt.figure(figsize=(14,6))
+    ax = plt.subplot(1,2,1)
+    ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
+    plt.title('dataset')
+
+    ax = plt.subplot(1,2,2)
+    plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale)
+
+    plt.savefig('uniscale_nfa.svg')
+    plt.close()
 
 if __name__ == "__main__":
     print("RANSAC baseline test")
