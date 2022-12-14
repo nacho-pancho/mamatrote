@@ -107,7 +107,7 @@ def run_experiment():
     plt.show()
     models,scores,model_points = detect_uniscale(all_points,scale=scale,nsamp=nransac)
     scores = [-np.log10(s) for s in scores]
-    plot_uniscale_ransac_nfa(all_points, models, scores, model_points, scale)
+    plot_uniscale_ransac_affine(all_points, models, scores, model_points, scale)
 
 
 if __name__ == "__main__":

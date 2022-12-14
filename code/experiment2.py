@@ -54,7 +54,7 @@ def model_vs_scale_and_scatter(m,n,scatters,scales,scatter_dist=None, bg_dist=No
         seeds = rng.integers(low=1,high=65535,size=nsamp)
         nseeds = len(seeds)
         for seed in seeds:
-            model_points = sim_affine_cloud(affine_set, nmodel, model_dist, scatter_dist, scatter=scat)
+            model_points = sim_affine_cloud(affine_set, nmodel, scat, model_dist, scatter_dist)
             back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):

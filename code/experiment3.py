@@ -72,8 +72,8 @@ def parallel_vs_distance(m,n,
         affine_set_2 = build_affine_set_relative_to(affine_set_1, dist=dist, angle=0)
         for seed in seeds:
             #model_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
-            model1_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
-            model2_points = sim_affine_cloud(affine_set_2, nmodel, model_dist, scatter_dist, scatter=scatter)
+            model1_points = sim_affine_cloud(affine_set_1, nmodel, scatter, model_dist, scatter_dist)
+            model2_points = sim_affine_cloud(affine_set_2, nmodel, scatter, model_dist, scatter_dist)
             model_points = np.concatenate((model1_points,model2_points))
             back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))

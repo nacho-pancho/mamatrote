@@ -66,7 +66,7 @@ def ransac_baseline_test(points,scale,nsamp):
         if nfa > 0:
             #plot_set(ax, cand, color1=color, color2=color, length=2)
             color = (*color[:3],0.2)
-            plot_set_2d_poly(ax, cand, 50, scale, color)
+            plot_affine_set_2d_poly(ax, cand, 50, scale, color)
             a_points = np.array(find_aligned_points(points,cand,distance_to_affine,scale))
             plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
             det += 1

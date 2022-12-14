@@ -132,7 +132,7 @@ def run_experiment():
 
     ax = plt.subplot(1,2,2)
     for node in nodes:
-        plot_multiscale_ransac_nfa(ax,node)
+        plot_multiscale_ransac_affine(ax, node)
     xmin = 0.9*np.min([p[0] for p in all_points])
     xmax = 1.1*np.max([p[0] for p in all_points])
     ymin = 0.9*np.min([p[1] for p in all_points])

@@ -10,7 +10,7 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from matplotlib import patches
 import numpy as np
 
-def plot_set_2d(ax,affine_set,color1,color2,show_ortho=False,length=1):
+def plot_affine_set_2d(ax, affine_set, color1, color2, show_ortho=False, length=1):
 
     c,V,W = affine_set
     m,n = V.shape
@@ -23,7 +23,7 @@ def plot_set_2d(ax,affine_set,color1,color2,show_ortho=False,length=1):
         for j in range(n-m):
             ax.plot((c[0], c[0] + length*W[j,0]), (c[1], c[1] + length*W[j, 1]), color=color2,lw=0.5)
 
-def plot_set_3d(ax,affine_set,color1,color2,show_ortho=False,length=1):
+def plot_affine_set_3d(ax, affine_set, color1, color2, show_ortho=False, length=1):
 
     c,V,W = affine_set
     m,n = V.shape
@@ -36,18 +36,18 @@ def plot_set_3d(ax,affine_set,color1,color2,show_ortho=False,length=1):
         for j in range(n-m):
             ax.plot((c[0], c[0] + length*W[j,0]), (c[1], c[1] + length*W[j, 1]), (c[2], c[2] + length*W[j, 2]), color=color2)
 
-def plot_set(ax,affine_set,color1,color2,show_ortho=False,length=1):
+def plot_affine_set(ax, affine_set, color1, color2, show_ortho=False, length=1):
     """
     up to dimension 3
     """
     c,V,W = affine_set
     m,n = V.shape
     if n == 2:
-        plot_set_2d(ax,affine_set,color1,color2,show_ortho,length)
+        plot_affine_set_2d(ax, affine_set, color1, color2, show_ortho, length)
     elif n == 3:
-        plot_set_3d(ax,affine_set,color1,color2,show_ortho,length)
+        plot_affine_set_3d(ax, affine_set, color1, color2, show_ortho, length)
 
-def plot_set_2d_poly(ax,affine_set,length,width,color,border=False):
+def plot_affine_set_2d_poly(ax, affine_set, length, width, color, border=False):
     """
     up to dimension 3
     """
@@ -116,21 +116,21 @@ def plot_scores_img(y,ylabel,x,xlabel,nfa,title):
     plt.close(fig)
 
 
-def plot_two_sets(affine_set_1, affine_set_2, points_1, points_2, ran):
+def plot_two_affine_sets(affine_set_1, affine_set_2, points_1, points_2, ran):
     fig = plt.figure(figsize=(12,12))
     n = points_1.shape[1]
     if n == 2:
         ax = fig.add_subplot()
-        plot_set(ax, affine_set_1, color1='red', color2='red')
-        plot_set(ax, affine_set_2, color1='blue', color2='blue')
+        plot_affine_set(ax, affine_set_1, color1='red', color2='red')
+        plot_affine_set(ax, affine_set_2, color1='blue', color2='blue')
         ax.scatter(points_1[:,0],points_1[:,1],color='orange')
         ax.scatter(points_2[:,0],points_2[:,1],color='cyan')
         #ax.xlim(-ran,ran)
         #ax.ylim(-ran,ran)
     elif n == 3:
         ax = fig.add_subplot(projection='3d')
-        plot_set(ax, affine_set_1, color1='red', color2='red')
-        plot_set(ax, affine_set_2, color1='blue', color2='blue')
+        plot_affine_set(ax, affine_set_1, color1='red', color2='red')
+        plot_affine_set(ax, affine_set_2, color1='blue', color2='blue')
         ax.scatter(points_1[:,0],points_1[:,1],points_1[:,2], color='orange')
         ax.scatter(points_2[:,0],points_2[:,1],points_1[:,2], color='cyan')
         ax.view_init(elev=70,azim=120)
@@ -139,7 +139,7 @@ def plot_two_sets(affine_set_1, affine_set_2, points_1, points_2, ran):
         #ax.zlim(-ran,ran)
 
 
-def plot_uniscale_ransac_nfa(all_points, models, scores, model_points, scale):
+def plot_uniscale_ransac_affine(all_points, models, scores, model_points, scale):
     """
     :return:
     """
@@ -154,7 +154,7 @@ def plot_uniscale_ransac_nfa(all_points, models, scores, model_points, scale):
         color = cmap(score/max_score)
         #plot_set(ax, cand, color1=color, color2=color, length=2)
         color = (*color[:3],0.2)
-        plot_set_2d_poly(ax, model, 50, scale, color)
+        plot_affine_set_2d_poly(ax, model, 50, scale, color)
         mpoints = np.array(mpoints)
         plt.scatter(mpoints[:, 0], mpoints[:, 1], color="gray", s=4, alpha=0.5)
         plt.scatter(mpoints[0, 0], mpoints[0, 1], alpha=1,s=0.01) # hack para que el colorbar no quede transparente
@@ -171,7 +171,7 @@ def plot_uniscale_ransac_nfa(all_points, models, scores, model_points, scale):
     plt.show()
 
 
-def plot_multiscale_ransac_nfa(ax,model_node):
+def plot_multiscale_ransac_affine(ax, model_node):
     """
     :return:
     """
@@ -181,8 +181,24 @@ def plot_multiscale_ransac_nfa(ax,model_node):
     #_color = cmap(min(_scale, 1))
     #_color = (*_color[:3],0.1)
     _color = (0,0,0,0.05)
-    plot_set_2d_poly(ax, _model, 50, _scale,_color )
+    plot_affine_set_2d_poly(ax, _model, 50, _scale, _color)
     plt.scatter(_points[:, 0], _points[:, 1], color="gray", s=4, alpha=0.5)
     plt.scatter(_points[0, 0], _points[0, 1], alpha=1, s=0.01)  # hack para que el colorbar no quede transparente
     for node in _children:
-        plot_multiscale_ransac_nfa(ax,node)
+        plot_multiscale_ransac_affine(ax, node)
+
+def plot_ring():
+    n, radii = 50, [.7, .95]
+    theta = np.linspace(0, 2*np.pi, n, endpoint=True)
+    xs = np.outer(radii, np.cos(theta))
+    ys = np.outer(radii, np.sin(theta))
+
+    # in order to have a closed area, the circles
+    # should be traversed in opposite directions
+    xs[1,:] = xs[1,::-1]
+    ys[1,:] = ys[1,::-1]
+
+    ax = plt.subplot(111, aspect='equal')
+    ax.fill(np.ravel(xs), np.ravel(ys), edgecolor='#348ABD')
+
+    plt.show()

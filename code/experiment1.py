@@ -64,7 +64,7 @@ def model_vs_scale_and_npoints(m,n,
         nback  = npoints - nmodel
         t0 = time.time()
         for seed in seeds:
-            model_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
+            model_points = sim_affine_cloud(affine_set_1, nmodel, scatter, model_dist, scatter_dist)
             back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):

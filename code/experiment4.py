@@ -90,8 +90,8 @@ def oblique_vs_angle(m, n,
         else:
             affine_set_2 = affine_set_1
         for seed in seeds:
-            model1_points = sim_affine_cloud(affine_set_1, nmodel, model_dist, scatter_dist, scatter=scatter)
-            model2_points = sim_affine_cloud(affine_set_2, nmodel, model_dist, scatter_dist, scatter=scatter)
+            model1_points = sim_affine_cloud(affine_set_1, nmodel, scatter, model_dist, scatter_dist)
+            model2_points = sim_affine_cloud(affine_set_2, nmodel, scatter, model_dist, scatter_dist)
             back_points  = bg_dist((nback, n))
             model_points = np.concatenate((model1_points,model2_points))
             _test_points = np.concatenate((model_points,back_points))
@@ -100,7 +100,7 @@ def oblique_vs_angle(m, n,
                 if seed == seeds[0]:
                     #print(f"\tdist {dist:6} scale {s:6.3f} samples {nsamp:3}  log(nfa) {np.log10(nfa):8.4f}")
                     if ang == angles[nang//2]:
-                        plot_two_sets(affine_set_1, affine_set_2, model1_points, model2_points, ran=1)
+                        plot_two_affine_sets(affine_set_1, affine_set_2, model1_points, model2_points, ran=1)
                         plt.savefig(f"cloud_n_{n}_m{m}_ang_{ang:06.4f}.svg")
                         plt.close()
                 nfas[i,j] += nfa < 1 # np.log(max(nfa,1e-40))
