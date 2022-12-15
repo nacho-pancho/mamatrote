@@ -90,8 +90,8 @@ def oblique_vs_angle(m, n,
         else:
             affine_set_2 = affine_set_1
         for seed in seeds:
-            model1_points = sim_affine_cloud(affine_set_1, nmodel, scatter, model_dist, scatter_dist)
-            model2_points = sim_affine_cloud(affine_set_2, nmodel, scatter, model_dist, scatter_dist)
+            model1_points = sim_affine_cloud(affine_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
+            model2_points = sim_affine_cloud(affine_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
             back_points  = bg_dist((nback, n))
             model_points = np.concatenate((model1_points,model2_points))
             _test_points = np.concatenate((model_points,back_points))

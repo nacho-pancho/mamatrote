@@ -27,6 +27,7 @@ def ransac_baseline_test(points,scale,nsamp):
     """
     :return:
     """
+    rng = random.default_rng()
     fig = plt.figure(figsize=(14,6))
     #ax = fig.add_subplot()
     ax = plt.subplot(1,2,1)
@@ -35,13 +36,14 @@ def ransac_baseline_test(points,scale,nsamp):
     ax = plt.subplot(1,2,2)
     N,n = points.shape
     m = 1
-    candidates = ransac_affine(points,m,nsamp)
+    candidates = ransac_affine(points,m,nsamp,rng)
     nfas = list()
     cmap = cm.get_cmap("viridis")#LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
     nfas= list()
     counts = list()
     for cand in candidates:
-        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, ntests=nsamp, return_counts=True)
+        #nfa, count = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, ntests=nsamp, return_counts=True)
+        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, ntests=N**2, return_counts=True)
         nfas.append(-np.log10(nfa))
         counts.append(count)
     #
@@ -106,6 +108,7 @@ def run_experiment():
     #m       = args["affine_dim"]
     #k       = args["nstruct"]
     #
+    rng = random.default_rng()
     n = 2
     m = 1
     # kind of Anarchy symbol with double horizontal bar
@@ -121,13 +124,12 @@ def run_experiment():
     k = len(models)
     npermodel = npoints // (k+1)
     plt.figure(figsize=(8,8))
-    bg_points = 30*sim_background_points(npermodel,2)-5
+    bg_points = 30*sim_background_points(npermodel,2, rng)-5
     plt.scatter(bg_points[:,0],bg_points[:,1],color='black',alpha=0.25,s=2)
     fg_points = list()
     for model in models:
-        rng = random.default_rng(seed=42)
         model_distro = lambda x: rng.uniform(size=x, low=-10, high=10)
-        model_cloud = sim_affine_cloud(model, npermodel, scatter=scatter,model_distro=model_distro)
+        model_cloud = sim_affine_cloud(model, npermodel, rng, scatter=scatter,model_distro=model_distro)
         plt.scatter(model_cloud[:, 0], model_cloud[:, 1],alpha=1,s=2)
         fg_points.append(model_cloud)
     all_points = fg_points

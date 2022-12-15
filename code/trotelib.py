@@ -131,7 +131,7 @@ def sim_affine_set(ambient_dim,affine_dim,distro):
     return build_affine_set(V)
 
 
-def sim_affine_cloud(_affine_set, _num_points, scatter = 1.0, model_distro=None, scatter_distro=None):
+def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro=None, scatter_distro=None):
     """
     given an affine set, simulate a cloud of points such
     that the distribution of their distance to the given affine
@@ -148,9 +148,8 @@ def sim_affine_cloud(_affine_set, _num_points, scatter = 1.0, model_distro=None,
     """
     c,V,W = _affine_set
     m,n = V.shape
-    rng = random.default_rng()
     if model_distro is None:
-        model_distro = lambda x: rng.uniform(size=x, low=-scatter*10, high=scatter*10)
+        model_distro = lambda x: _rng.uniform(size=x, low=-scatter*10, high=scatter*10)
     if scatter_distro is None:
         scatter_distro = build_scatter_distribution(n - m)
 
@@ -169,13 +168,12 @@ def sim_affine_cloud(_affine_set, _num_points, scatter = 1.0, model_distro=None,
         x =  c + a @ W
         return x
 
-def sim_background_points(npoints,n,bg_scale=1, bg_dist=None,seed=42):
-    rng = random.default_rng(seed=42)
+def sim_background_points(npoints,n, _rng, bg_scale=1, bg_dist=None):
     if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x)
+        bg_dist = lambda x: _rng.uniform(size=x)
     return bg_dist((npoints, n))
 
-def ransac_affine(points, m, k, seed=42):
+def ransac_affine(points, m, k, _rng):
     """
     Create k candidate models from random samples of m+1 n-dimensional points
     :param points: input data points
@@ -184,11 +182,10 @@ def ransac_affine(points, m, k, seed=42):
     :return: a list of candidate affine models
     """
     N,n = points.shape
-    rng = random.default_rng(seed=seed)
     models = list()
     idx = range(N)
     for i in range(k):
-        chosen_ones = rng.choice(idx,size=m+1,replace=False)
+        chosen_ones = _rng.choice(idx,size=m+1,replace=False)
         list_of_points = [points[r,:] for r in chosen_ones ]
         sampled_model = build_affine_set(list_of_points)
         models.append(sampled_model)
@@ -243,7 +240,7 @@ if __name__ == "__main__":
     d1 = lambda x: rng.uniform(size=x,low=-2,high=2)
     d2 = build_scatter_distribution(n - m)
     scatter = 0.02
-    test_points = sim_affine_cloud(affine_set, N, d1, d2, scatter)
+    test_points = sim_affine_cloud(affine_set, N, rng, scatter, d1, d2)
     plt.figure(figsize=(10,5))
     plt.subplot(1,2,1)
     plt.scatter(test_points[:,0],test_points[:,1],color='gray',alpha=0.05)

@@ -25,14 +25,15 @@ import matplotlib.cm as cm
 def detect_uniscale(points,scale,nsamp):
     N,n = points.shape
     m = 1
-    candidates = ransac_affine(points,m,nsamp)
+    rng = random.default_rng()
+    candidates = ransac_affine(points,m,nsamp,rng)
     cand_points = np.copy(points)
     sig_models = list()
     sig_scores = list()
     sig_points = list()
     for i in range(1000):
         ntests = len(cand_points)
-        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=ntests) for cand in candidates]
+        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=N**2) for cand in candidates]
         best_idx = np.argmin(nfas)
         best_nfa  = nfas[best_idx]
         print(i,len(cand_points),best_nfa)
@@ -71,6 +72,7 @@ def run_experiment():
     npoints = args["npoints"]
     scatter = args["scatter"]
     scale   = args["scale"]
+    rng = random.default_rng()
     #n       = args["ambient_dim"]
     #m       = args["affine_dim"]
     #k       = args["nstruct"]
@@ -90,13 +92,12 @@ def run_experiment():
     k = len(models)
     npermodel = npoints // (k+1)
     plt.figure(figsize=(8,8))
-    bg_points = 30*sim_background_points(npermodel,2)-5
+    bg_points = 30*sim_background_points(npermodel,2,rng)-5
     plt.scatter(bg_points[:,0],bg_points[:,1],color='black',alpha=0.25,s=2)
     fg_points = list()
     for model in models:
-        rng = random.default_rng(seed=42)
         model_distro = lambda x: rng.uniform(size=x, low=-10, high=10)
-        model_cloud = sim_affine_cloud(model, npermodel, scatter=scatter,model_distro=model_distro)
+        model_cloud = sim_affine_cloud(model, npermodel, rng, scatter=scatter,model_distro=model_distro)
         plt.scatter(model_cloud[:, 0], model_cloud[:, 1],alpha=1,s=4)
         fg_points.append(model_cloud)
     all_points = fg_points
@@ -104,7 +105,7 @@ def run_experiment():
     all_points = np.concatenate(all_points) # turn list of matrices into one matrix
     fbase  = (f'baseline RANSAC test for a fixed pattern of 3 lines o a plane').lower().replace(' ','_').replace('=','_')
     plt.savefig('uniscale_dataset.svg')
-    plt.close()
+    #plt.close()
     models,scores,model_points = detect_uniscale(all_points,scale=scale,nsamp=nransac)
     scores = [-np.log10(s) for s in scores]
 
@@ -117,7 +118,8 @@ def run_experiment():
     plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale)
 
     plt.savefig('uniscale_nfa.svg')
-    plt.close()
+    #plt.close()
+    plt.show()
 
 if __name__ == "__main__":
     print("RANSAC baseline test")

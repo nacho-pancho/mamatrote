@@ -171,12 +171,21 @@ def plot_multiscale_ransac_affine(ax, model_node):
     """
     cmap = cm.get_cmap("jet")
     _scale, _model, _score, _points, _children = model_node
+    #if True:
+    if len(_children) == 0:
+        _color = (1,0,0,0.05)
+    elif len(_children) == 1:
+        _color = (0,1,0,0.05)
+    else:
+        _color = (0,0,1,0.05)
     print('plotting ',_scale,_score,len(_points),len(_children))
-    _color = (0,0,0,0.05)
     plot_affine_set_2d_poly(ax, _model, 50, _scale, _color)
     plt.scatter(_points[:, 0], _points[:, 1], color="gray", s=4, alpha=0.5)
     plt.scatter(_points[0, 0], _points[0, 1], alpha=1, s=0.01)  # hack para que el colorbar no quede transparente
     for node in _children:
+        # TEMPORAL
+        #
+        # FIN TEMPORAL
         plot_multiscale_ransac_affine(ax, node)
     return ax
 
