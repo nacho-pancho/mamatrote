@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Here we test a greedy version of the RANSAC/NFA algorithm.
-Given a set of points, and a set of candidates, we find the most significant model.
-We save it and remove all its nearby points from the dataset.
-We repeat this until there are no new significant sets.
+Here we combine the greedy version of the RANSAC/NFA algorithm
+with a multiscale approach. This version differs from experiment 8 in that it uses
+the alternate method (non greedy) for selecting the detected models. See experiment 9
+for details.
 """
 import time
 import os
@@ -22,10 +22,9 @@ from troteplot import *
 import matplotlib.cm as cm
 
 
-def detect_uniscale(points,scale,nsamp):
+def detect_uniscale(points,scale,nsamp, rng):
     N,n = points.shape
     m = 1
-    rng = random.default_rng()
     candidates = ransac_affine(points,m,nsamp,rng)
     cand_points = np.copy(points)
     sig_models = list()
@@ -33,11 +32,13 @@ def detect_uniscale(points,scale,nsamp):
     sig_points = list()
     for i in range(1000):
         ntests = len(cand_points)
+        if ntests <= m+1:
+            break
         nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=N**3) for cand in candidates]
         best_idx = np.argmin(nfas)
         best_nfa  = nfas[best_idx]
-        print(i,len(cand_points),best_nfa)
-        if best_nfa >= 0.1: # probando con umbral más exigente
+        #print('model',i,'npoints',len(cand_points),'nfa',best_nfa)
+        if best_nfa >= 1: # probando con umbral más exigente
             break
         best_cand = candidates[best_idx]
         best_points = find_aligned_points(cand_points,best_cand,distance_to_affine,scale)
@@ -54,12 +55,28 @@ def detect_uniscale(points,scale,nsamp):
     return sig_models,sig_scores,sig_points
 
 
+def detect_multiscale(points, scale, factor, nsamp, rng, depth=0):
+    models, scores, p2 = detect_uniscale(points,scale,nsamp, rng)
+    nmodels = len(models)
+    print('\t'*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    if nmodels == 0:
+        return ()
+    else:
+        model_nodes = list()
+        for m,s,p in zip(models,scores,p2):
+            pmat = np.array(p)
+            children = detect_multiscale(pmat,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,pmat,children) )
+        return model_nodes
+
+
+
 
 import argparse
 
 def run_experiment():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--nsamples", type=int, default=500,
+    ap.add_argument("--nsamples", type=int, default=1000,
                     help="number of RANSAC samples to draw")
     ap.add_argument("--npoints", type=int, default=200,
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
@@ -72,11 +89,11 @@ def run_experiment():
     npoints = args["npoints"]
     scatter = args["scatter"]
     scale   = args["scale"]
-    rng = random.default_rng()
     #n       = args["ambient_dim"]
     #m       = args["affine_dim"]
     #k       = args["nstruct"]
     #
+    rng = random.default_rng(seed=42)
     n = 2
     m = 1
     # kind of Anarchy symbol with double horizontal bar
@@ -104,22 +121,34 @@ def run_experiment():
     all_points.append(bg_points)
     all_points = np.concatenate(all_points) # turn list of matrices into one matrix
     fbase  = (f'baseline RANSAC test for a fixed pattern of 3 lines o a plane').lower().replace(' ','_').replace('=','_')
-    plt.savefig('uniscale_dataset.svg')
-    #plt.close()
-    models,scores,model_points = detect_uniscale(all_points,scale=scale,nsamp=nransac)
-    scores = [-np.log10(s) for s in scores]
+    plt.grid(True)
+    plt.savefig('multiscale_dataset.svg')
+    nodes = detect_multiscale(all_points,scale=20,factor=0.6,nsamp=nransac,rng=rng)
 
-    fig = plt.figure(figsize=(14,6))
-    ax = plt.subplot(1,2,1)
-    ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
-    plt.title('dataset')
+    fig = plt.figure(figsize=(6,6))
+    #ax = plt.subplot(1,2,1)
+    #ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
+    #plt.title('dataset')
 
-    ax = plt.subplot(1,2,2)
-    plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale)
-
-    plt.savefig('uniscale_nfa.svg')
-    #plt.close()
+    #ax = plt.subplot(1,2,2)
+    ax = fig.add_subplot()
+    for node in nodes:
+        plot_multiscale_ransac_affine(ax, node)
+    xmin = 0.9*np.min([p[0] for p in all_points])
+    xmax = 1.1*np.max([p[0] for p in all_points])
+    ymin = 0.9*np.min([p[1] for p in all_points])
+    ymax = 1.1*np.max([p[1] for p in all_points])
+    xlen = (xmax-xmin)
+    ylen = (ymax-ymin)
+    maxlen = max(xlen,ylen)
+    plt.xlim(xmin,xmin+maxlen)
+    plt.ylim(ymin,ymin+maxlen)
+    plt.title('detected models')
+    plt.savefig('multiscale_nfa.svg')
     plt.show()
+    plt.close()
+
+
 
 if __name__ == "__main__":
     print("RANSAC baseline test")
