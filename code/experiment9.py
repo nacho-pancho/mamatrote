@@ -82,23 +82,23 @@ def detect_uniscale(points,scale,nsamp):
             best_aux  = [tuple(c) for c in best_points]
             other_aux = [tuple(c) for c in other_points]
             other_rem = np.array(list(set(other_aux).difference(set(best_aux))))
-            #print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
-            if len(other_rem) <= m+1:
+            print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
+            if len(other_rem) <= m+2:
+                print(" not enough points")
                 continue
-                print(" not enough points",end=" ")
             #
             # see if it is still significant
             #
             rem_nfa = nfa_ks(other_rem, other_model, m, m + 1, distance_to_affine, scale, ntests=N ** 2)
-            #print(f"orig NFA {other_nfa:16.4f} NFA of non-redundant points {rem_nfa:16.4f}",end=" ")
+            print(f"orig NFA {other_nfa:16.4f} NFA of non-redundant points {rem_nfa:16.4f}",end=" ")
             #
             # if it is, it is the new top
             #
             if rem_nfa < 1:
-            #    print("KEPT!")
+                print("-> non-redundant")
                 filtered_models.append((other_model,other_nfa,other_points))
             else:
-                pass#print("REMOVED!")
+                print("-> redundant")
             # if other_nfa >= 1, the top is incremented but the other model is _not_ added to the list
         #
         #
@@ -114,13 +114,13 @@ import argparse
 
 def run_experiment():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--nsamples", type=int, default=500,
+    ap.add_argument("--nsamples", type=int, default=1000,
                     help="number of RANSAC samples to draw")
     ap.add_argument("--npoints", type=int, default=200,
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
     ap.add_argument("--scatter", type=float, default=0.1,
                     help="How far are the model points scattered from the ground truth element.")
-    ap.add_argument("--scale", type=float, default=0.4,
+    ap.add_argument("--scale", type=float, default=0.2,
                     help="Analysis scale.")
     args = vars(ap.parse_args())
     nransac = args["nsamples"]
@@ -165,8 +165,6 @@ def run_experiment():
     model_scores = [-np.log10(s[1]) for s in models]
     model_models = [s[0] for s in models]
     model_points = [s[2] for s in models]
-    for p in model_points:
-        print(len(p))
     fig = plt.figure(figsize=(14,6))
     ax = plt.subplot(1,2,1)
     ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
