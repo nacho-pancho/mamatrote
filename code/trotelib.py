@@ -209,11 +209,11 @@ def ransac_affine(points, m, k, _rng):
     return models
 
 
-def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None, return_counts=False):
+def nfa_ks(points, model, model_dim, model_nparam, distance, scale, ntests=None, return_counts=False):
     """
     Compute the Kolmogorov-Smirnoff-based NFA score for a set of points w.r.t. a model (for a given scale).
 
-    :param data: data points
+    :param points: data points
     :param model: a candidate model
     :param model_dim: dimension of the model
     :param model_nparam: number of parameters required to define the model
@@ -222,11 +222,11 @@ def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None, r
     :return: the NFA detection score for the model given the data points and the analysis scale
     """
     if ntests is None:
-        ntests = special.binom(len(data), model_nparam)
+        ntests = special.binom(len(points), model_nparam)
 
-    ambient_dim = len(data[0])  # infer ambient dimension from first data point
+    ambient_dim = len(points[0])  # infer ambient dimension from first data point
     res_dim = ambient_dim - model_dim  # infer orthogonal space dimension
-    distances = list(d / scale for d in distance(data, model) if d <= scale)
+    distances = list(d / scale for d in distance(points, model) if d <= scale)
     nclose = len(distances)
     if nclose <= model_nparam + 1:  # hay problemas con KStest con muy pocos puntos!
         if return_counts:
@@ -243,14 +243,17 @@ def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None, r
 def ransac_nfa_affine_uniscale_greedy(points,scale,nsamp,rng):
     N = len(points)
     m = 1
+    detected_models = list()
+    if not N:
+        return detected_models
+
     candidates = ransac_affine(points,m,nsamp,rng)
     cand_points = tuple(points)
-    detected_models = list()
-    for i in range(1000):
+
+    while len(cand_points):
         nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=N**3) for cand in candidates]
         best_idx = np.argmin(nfas)
         best_nfa  = nfas[best_idx]
-        print(i,len(cand_points),best_nfa)
         if best_nfa >= 1:
             break
         best_cand = candidates[best_idx]
@@ -264,16 +267,16 @@ def ransac_nfa_affine_uniscale_greedy(points,scale,nsamp,rng):
 
 
 def ransac_nfa_affine_multiscale_greedy(points, scale, factor, nsamp, rng, depth=0):
-    models, scores, p2 = ransac_nfa_affine_uniscale_greedy(points,scale,nsamp, rng)
-    nmodels = len(models)
-    print('\t'*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    detected_models = ransac_nfa_affine_uniscale_greedy(points,scale,nsamp, rng)
+    nmodels = len(detected_models)
+    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
     if nmodels == 0:
         return ()
     else:
         model_nodes = list()
-        for m,s,p in zip(models,scores,p2):
+        for m,p,s in detected_models:
             pmat = np.array(p)
-            children = ransac_nfa_affine_uniscale_greedy(pmat,scale*factor,factor,nsamp, rng, depth=depth+1)
+            children = ransac_nfa_affine_multiscale_greedy(pmat,scale*factor,factor,nsamp, rng, depth=depth+1)
             model_nodes.append( (scale*factor,m,s,pmat,children) )
         return model_nodes
 
@@ -283,7 +286,7 @@ def ransac_nfa_affine_uniscale_rafa(points,scale,nsamp,rng):
     m = 1
     candidates = ransac_affine(points,m,nsamp,rng)
     cand_models = list(candidates)
-    sig_models = list()
+    detected_models = list()
     rem_points = list() # these are the excluding ALL significant models found so far
     #
     # The baseline (global ) NFAs are computed _once_
@@ -303,10 +306,10 @@ def ransac_nfa_affine_uniscale_rafa(points,scale,nsamp,rng):
     excluded_points = list()
     while len(cand_models):
         best_cand,best_nfa,best_points   = cand_models[0]
-        print("NFA of best model",best_nfa)
+        #print("NFA of best model",best_nfa)
         if best_nfa >= 1:
             break
-        sig_models.append((best_cand,best_points,best_nfa))
+        detected_models.append((best_cand,best_points,best_nfa))
         excluded_points.extend(best_points)
         filtered_models = list()
         for t in range(1,len(cand_models)):
@@ -315,45 +318,45 @@ def ransac_nfa_affine_uniscale_rafa(points,scale,nsamp,rng):
             # remove the best candidate points from this model
             #
             other_rem = subtract_points(other_points,excluded_points)
-            print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
+            #print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
             if len(other_rem) <= m+2:
-                print(" not enough points")
+                #print(" not enough points")
                 continue
             #
             # see if it is still significant
             #
             rem_nfa = nfa_ks(other_rem, other_model, m, m + 1, distance_to_affine, scale, ntests=N ** 2)
-            print(f"orig NFA {other_nfa:16.4f} NFA of non-redundant points {rem_nfa:16.4f}",end=" ")
+            #print(f"orig NFA {other_nfa:16.4f} NFA of non-redundant points {rem_nfa:16.4f}",end=" ")
             #
             # if it is, it is the new top
             #
             if rem_nfa < 1:
-                print("-> non-redundant")
+                #print("-> non-redundant")
                 filtered_models.append((other_model,other_nfa,other_points))
             else:
-                print("-> redundant")
+                pass
+                #print("-> redundant")
             # if other_nfa >= 1, the top is incremented but the other model is _not_ added to the list
         #
         #
         # we continue the analysis with the filtered models
-        print("redundant ",len(cand_models)-len(filtered_models),"non-redundant ",len(filtered_models))
+        #print("redundant ",len(cand_models)-len(filtered_models),"non-redundant ",len(filtered_models))
         cand_models = filtered_models
-    print("kept ", len(sig_models))
-    return sig_models
+    print("kept ", len(detected_models))
+    return detected_models
 
 
 def ransac_nfa_affine_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0):
-    models, scores, p2 = ransac_nfa_affine_uniscale_rafa(points,scale,nsamp, rng)
-    nmodels = len(models)
-    print('\t'*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    detected_models = ransac_nfa_affine_uniscale_rafa(points,scale,nsamp, rng)
+    nmodels = len(detected_models)
+    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
     if nmodels == 0:
         return ()
     else:
         model_nodes = list()
-        for m,s,p in zip(models,scores,p2):
-            pmat = np.array(p)
-            children = ransac_nfa_affine_uniscale_rafa(pmat,scale*factor,factor,nsamp, rng, depth=depth+1)
-            model_nodes.append( (scale*factor,m,s,pmat,children) )
+        for m,p,s in detected_models:
+            children = ransac_nfa_affine_multiscale_rafa(points,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,points,children) )
         return model_nodes
 
 #==========================================================================================
