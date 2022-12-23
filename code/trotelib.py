@@ -19,7 +19,7 @@ from numpy import linalg as la
 from scipy import stats
 from scipy import special
 
-def build_scatter_distribution(r, theta=0):
+def build_scatter_distribution(r, rng, theta=0):
     """
     Construct a probability distribution over the ball of radius in ambient
     space R^r so that the distribution of the distance to the origin is uniform.
@@ -31,10 +31,9 @@ def build_scatter_distribution(r, theta=0):
     :return:
     """
     if theta <= 0:
-        return lambda size: np.random.power(r,size=size)
+        return lambda size: rng.power(r,size=size)
     else:
-        return lambda size: np.random.power(r-theta,size=size)
-        #return lambda size: stats.gengamma.rvs(a=r,c=theta,size=size)
+        return lambda size: rng.power(r-theta,size=size)
 
 
 def build_affine_set(list_of_points):
@@ -48,8 +47,9 @@ def build_affine_set(list_of_points):
     #
     # convert X to numpy array, if it is a list
     #
-    _rng = random.default_rng(123098)
-    x_0 = np.array(list_of_points[0])
+    # it is ok that this one is fixed; it's just auxiliary
+    _rng = np.random.default_rng(42)
+    x_0 = list_of_points[0]
     n = len(x_0)
     m = len(list_of_points)-1
     if m > 0:
@@ -67,6 +67,7 @@ def build_affine_set(list_of_points):
         W = W.T
     return x_0, V, W
 
+
 def build_affine_set_relative_to(affine_set,dist=0,angle=0):
     """
     Given an affine set, build another one so that it is at a given angle
@@ -76,10 +77,8 @@ def build_affine_set_relative_to(affine_set,dist=0,angle=0):
     c,V,W = affine_set
     m,n = V.shape
     n = len(c)
-    #print("m=",m)
     if angle != 0:
         R      = np.eye(n)
-        #print(V.shape,W.shape, R.shape)
         R[0,0] = R[1,1] = np.cos(angle)
         R[0,1] = np.sin(angle)
         R[1,0] = -np.sin(angle)
@@ -119,7 +118,7 @@ def distance_to_affine(list_of_points, affine_set, P=None):
     return la.norm(Xp,axis=1)
 
 
-def sim_affine_set(ambient_dim,affine_dim,distro):
+def sim_affine_set(ambient_dim,affine_dim,distro,rng):
     """
     Simulate an affine set in arbitrary dimension and with arbitrary subdimension
     :param ambient_dim: space where the affine set lives
@@ -128,7 +127,7 @@ def sim_affine_set(ambient_dim,affine_dim,distro):
     """
     x0 = distro(ambient_dim)
     V = distro((affine_dim+1,ambient_dim))
-    return build_affine_set(V)
+    return build_affine_set(V,rng)
 
 
 def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro=None, scatter_distro=None):
@@ -151,27 +150,45 @@ def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro
     if model_distro is None:
         model_distro = lambda x: _rng.uniform(size=x, low=-scatter*10, high=scatter*10)
     if scatter_distro is None:
-        scatter_distro = build_scatter_distribution(n - m)
+        scatter_distro = build_scatter_distribution(n - m,_rng)
 
     n = len(c)
     m = len(V)
-    b = model_distro((_num_points,m))
-    a0 = np.random.normal(size=(_num_points,n-m)) # anisotropic
-    _norms = np.linalg.norm(a0,axis=1)
-    _samples = scatter_distro(_num_points)
-    _deltas = scatter*_samples
-    a = np.outer(_deltas/_norms, np.ones(n-m)) * a0
-    if len(V) > 0:
-        x =  c + b @ V + a @ W
-        return x
-    else:
-        x =  c + a @ W
-        return x
+    list_of_points = list()
+    for i in range(_num_points):
+        b = model_distro((m))
+        a = _rng.normal(size=(n-m)) # anisotropic
+        norm = np.linalg.norm(a)
+        d = scatter*scatter_distro(1)
+        a *= d/norm
+        if len(V) > 0:
+            x =  c + b @ V + a @ W
+        else:
+            x =  c + a @ W
+        list_of_points.append(x)
+    return list_of_points
 
-def sim_background_points(npoints,n, _rng, bg_scale=1, bg_dist=None):
+
+def sim_background_points(npoints, n, _rng, bg_scale=1, bg_dist=None):
     if bg_dist is None:
         bg_dist = lambda x: _rng.uniform(size=x)
-    return bg_dist((npoints, n))
+    return list([bg_dist(n) for i in range(npoints)])
+
+
+def find_aligned_points(points, affine_set, distance, scale):
+    distances = distance(points,affine_set)
+    N = len(points)
+    return list([points[i] for i in range(N) if distances[i] < scale])
+
+
+def subtract_points(a,b):
+    """
+    utility to subract using sets of points
+    """
+    a_aux  = [tuple(c) for c in a]
+    b_aux  = [tuple(c) for c in b]
+    return list(set(a_aux).difference(set(b_aux)))
+
 
 def ransac_affine(points, m, k, _rng):
     """
@@ -181,25 +198,21 @@ def ransac_affine(points, m, k, _rng):
     :param k: number of samples to draw
     :return: a list of candidate affine models
     """
-    N,n = points.shape
+    N = len(points)
     models = list()
     idx = range(N)
     for i in range(k):
         chosen_ones = _rng.choice(idx,size=m+1,replace=False)
-        list_of_points = [points[r,:] for r in chosen_ones ]
+        list_of_points = [points[r] for r in chosen_ones ]
         sampled_model = build_affine_set(list_of_points)
         models.append(sampled_model)
     return models
 
-def find_aligned_points(points, affine_set, distance, scale):
-    distances = distance(points,affine_set)
-    N,n = points.shape
-    return list([points[i] for i in range(N) if distances[i] < scale])
 
-def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None,return_counts=False):
+def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None, return_counts=False):
     """
     Compute the Kolmogorov-Smirnoff-based NFA score for a set of points w.r.t. a model (for a given scale).
-    
+
     :param data: data points
     :param model: a candidate model
     :param model_dim: dimension of the model
@@ -211,11 +224,11 @@ def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None,re
     if ntests is None:
         ntests = special.binom(len(data), model_nparam)
 
-    ambient_dim = len(data[0])        # infer ambient dimension from first data point
-    res_dim = ambient_dim - model_dim # infer orthogonal space dimension 
-    distances = list(d/scale for d in distance(data, model) if d <= scale)
+    ambient_dim = len(data[0])  # infer ambient dimension from first data point
+    res_dim = ambient_dim - model_dim  # infer orthogonal space dimension
+    distances = list(d / scale for d in distance(data, model) if d <= scale)
     nclose = len(distances)
-    if nclose <= model_nparam+1: # hay problemas con KStest con muy pocos puntos!
+    if nclose <= model_nparam + 1:  # hay problemas con KStest con muy pocos puntos!
         if return_counts:
             return 10, nclose
         else:
@@ -226,6 +239,122 @@ def nfa_ks(data, model, model_dim, model_nparam, distance, scale, ntests=None,re
     else:
         return ntests * pvalue
 
+
+def ransac_nfa_affine_uniscale_greedy(points,scale,nsamp,rng):
+    N = len(points)
+    m = 1
+    candidates = ransac_affine(points,m,nsamp,rng)
+    cand_points = tuple(points)
+    detected_models = list()
+    for i in range(1000):
+        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=N**3) for cand in candidates]
+        best_idx = np.argmin(nfas)
+        best_nfa  = nfas[best_idx]
+        print(i,len(cand_points),best_nfa)
+        if best_nfa >= 1:
+            break
+        best_cand = candidates[best_idx]
+        best_points = find_aligned_points(cand_points,best_cand,distance_to_affine,scale)
+        detected_models.append((best_cand,best_points,best_nfa))
+        #
+        # remove aligned points
+        #
+        cand_points = subtract_points(cand_points,best_points)
+    return detected_models
+
+
+def ransac_nfa_affine_multiscale_greedy(points, scale, factor, nsamp, rng, depth=0):
+    models, scores, p2 = ransac_nfa_affine_uniscale_greedy(points,scale,nsamp, rng)
+    nmodels = len(models)
+    print('\t'*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    if nmodels == 0:
+        return ()
+    else:
+        model_nodes = list()
+        for m,s,p in zip(models,scores,p2):
+            pmat = np.array(p)
+            children = ransac_nfa_affine_uniscale_greedy(pmat,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,pmat,children) )
+        return model_nodes
+
+
+def ransac_nfa_affine_uniscale_rafa(points,scale,nsamp,rng):
+    N = len(points)
+    m = 1
+    candidates = ransac_affine(points,m,nsamp,rng)
+    cand_models = list(candidates)
+    sig_models = list()
+    rem_points = list() # these are the excluding ALL significant models found so far
+    #
+    # The baseline (global ) NFAs are computed _once_
+    #
+    nfas = [nfa_ks(points, cand, m, m + 1, distance_to_affine, scale, ntests=N ** 3) for cand in candidates]
+    #
+    # the candidates are sorted _once_ using their NFAs
+    # the most significant have lower NFA, so the ascending order is ok
+    #
+    idx = np.argsort(nfas)
+    nfas = [nfas[i] for i in idx]
+    cand_models = [cand_models[i] for i in idx]
+    cand_points = [find_aligned_points(points, c, distance_to_affine, scale) for c in cand_models]
+    cand_models = list(zip(cand_models,nfas,cand_points))
+    # now we repeat
+    #
+    excluded_points = list()
+    while len(cand_models):
+        best_cand,best_nfa,best_points   = cand_models[0]
+        print("NFA of best model",best_nfa)
+        if best_nfa >= 1:
+            break
+        sig_models.append((best_cand,best_points,best_nfa))
+        excluded_points.extend(best_points)
+        filtered_models = list()
+        for t in range(1,len(cand_models)):
+            other_model,other_nfa,other_points = cand_models[t]
+            #
+            # remove the best candidate points from this model
+            #
+            other_rem = subtract_points(other_points,excluded_points)
+            print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
+            if len(other_rem) <= m+2:
+                print(" not enough points")
+                continue
+            #
+            # see if it is still significant
+            #
+            rem_nfa = nfa_ks(other_rem, other_model, m, m + 1, distance_to_affine, scale, ntests=N ** 2)
+            print(f"orig NFA {other_nfa:16.4f} NFA of non-redundant points {rem_nfa:16.4f}",end=" ")
+            #
+            # if it is, it is the new top
+            #
+            if rem_nfa < 1:
+                print("-> non-redundant")
+                filtered_models.append((other_model,other_nfa,other_points))
+            else:
+                print("-> redundant")
+            # if other_nfa >= 1, the top is incremented but the other model is _not_ added to the list
+        #
+        #
+        # we continue the analysis with the filtered models
+        print("redundant ",len(cand_models)-len(filtered_models),"non-redundant ",len(filtered_models))
+        cand_models = filtered_models
+    print("kept ", len(sig_models))
+    return sig_models
+
+
+def ransac_nfa_affine_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0):
+    models, scores, p2 = ransac_nfa_affine_uniscale_rafa(points,scale,nsamp, rng)
+    nmodels = len(models)
+    print('\t'*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    if nmodels == 0:
+        return ()
+    else:
+        model_nodes = list()
+        for m,s,p in zip(models,scores,p2):
+            pmat = np.array(p)
+            children = ransac_nfa_affine_uniscale_rafa(pmat,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,pmat,children) )
+        return model_nodes
 
 #==========================================================================================
 

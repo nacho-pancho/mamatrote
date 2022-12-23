@@ -84,33 +84,31 @@ def run_experiment():
                     help="How far are the model points scattered from the ground truth element.")
     ap.add_argument("--scale", type=float, default=0.4,
                     help="Analysis scale.")
+    ap.add_argument("--seed", type=int, default=42,
+                    help="Random seed.")
+    ap.add_argument("--recompute", action="store_true",help="Force recomputation even if result exists.")
     args = vars(ap.parse_args())
     nransac = args["nsamples"]
     npoints = args["npoints"]
     scatter = args["scatter"]
     scale   = args["scale"]
-    #n       = args["ambient_dim"]
-    #m       = args["affine_dim"]
-    #k       = args["nstruct"]
-    #
-    rng = random.default_rng(seed=42)
+    seed    = args["seed"]
+    rng = random.default_rng(seed)
     n = 2
     m = 1
     # kind of Anarchy symbol with double horizontal bar
     models = list()
     lp = [[6.5,9],[3,14]]
-    models.append(build_affine_set(lp))
+    models.append(build_affine_set(lp,rng))
     lp = [[5.5,6.5],[1,3]]
-    models.append(build_affine_set(lp))
+    models.append(build_affine_set(lp,rng))
     lp = [[4.5,9],[5,14]]
-    models.append(build_affine_set(lp))
+    models.append(build_affine_set(lp,rng))
     lp = [[3.5,9],[4,14]]
-    models.append(build_affine_set(lp))
+    models.append(build_affine_set(lp,rng))
     k = len(models)
     npermodel = npoints // (k+1)
-    plt.figure(figsize=(8,8))
     bg_points = 30*sim_background_points(npermodel,2,rng)-5
-    plt.scatter(bg_points[:,0],bg_points[:,1],color='black',alpha=0.25,s=2)
     fg_points = list()
     for model in models:
         model_distro = lambda x: rng.uniform(size=x, low=-10, high=10)
@@ -121,16 +119,13 @@ def run_experiment():
     all_points.append(bg_points)
     all_points = np.concatenate(all_points) # turn list of matrices into one matrix
     fbase  = (f'baseline RANSAC test for a fixed pattern of 3 lines o a plane').lower().replace(' ','_').replace('=','_')
-    plt.grid(True)
+
+    plt.figure(figsize=(8,8))
+    plt.scatter(bg_points[:,0],bg_points[:,1],color='black',alpha=0.25,s=2)
     plt.savefig('multiscale_dataset.svg')
     nodes = detect_multiscale(all_points,scale=20,factor=0.6,nsamp=nransac,rng=rng)
 
     fig = plt.figure(figsize=(6,6))
-    #ax = plt.subplot(1,2,1)
-    #ax.scatter(all_points[:, 0], all_points[:, 1], alpha=1, s=2)
-    #plt.title('dataset')
-
-    #ax = plt.subplot(1,2,2)
     ax = fig.add_subplot()
     for node in nodes:
         plot_multiscale_ransac_affine(ax, node)

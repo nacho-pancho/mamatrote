@@ -85,16 +85,16 @@ def run_experiment():
                     help="How far are the model points scattered from the ground truth element.")
     ap.add_argument("--scale", type=float, default=0.4,
                     help="Analysis scale.")
+    ap.add_argument("--seed", type=int, default=42,
+                    help="Random seed.")
+    ap.add_argument("--recompute", action="store_true",help="Force recomputation even if result exists.")
     args = vars(ap.parse_args())
     nransac = args["nsamples"]
     npoints = args["npoints"]
     scatter = args["scatter"]
     scale   = args["scale"]
-    #n       = args["ambient_dim"]
-    #m       = args["affine_dim"]
-    #k       = args["nstruct"]
-    #
-    rng = random.default_rng(seed=42)
+    seed    = args["seed"]
+    rng = random.default_rng(seed)
     n = 2
     m = 1
     # kind of Anarchy symbol with double horizontal bar

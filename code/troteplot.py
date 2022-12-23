@@ -102,15 +102,12 @@ def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
 
 
 def plot_scores_img(y,ylabel,x,xlabel,nfa,title):
-    #detmap = ListedColormap(colors=["red", "yellow", "cyan", "blue"])
-    #detmap = LinearSegmentedColormap.from_list("pepe",colors=["red", "yellow", "cyan", "blue"])
-    detmap = LinearSegmentedColormap.from_list("pepe",colors=[(0,"black"), (1,"blue")])
+    #detmap = LinearSegmentedColormap.from_list("pepe",colors=[(0,"black"), (1,"blue")])
     fig = plt.figure(figsize=(10,10))
     plt.imshow(np.flipud(nfa), cmap='gray', extent=[x[0], x[-1], y[0], y[-1]], aspect='auto')
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
-    #plt.colorbar()
     fname = title.lower().replace(' ','_').replace('=','_')
     plt.savefig(f'{fname}_img.png')
     plt.close(fig)
@@ -147,7 +144,6 @@ def plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, sc
     cmap = cm.get_cmap("jet")
     for model,score,mpoints in zip(models,scores,model_points):
         color = cmap(score/max_score)
-        #plot_set(ax, cand, color1=color, color2=color, length=2)
         color = (*color[:3],0.2)
         plot_affine_set_2d_poly(ax, model, 50, scale, color)
         mpoints = np.array(mpoints)
@@ -189,18 +185,19 @@ def plot_multiscale_ransac_affine(ax, model_node):
         plot_multiscale_ransac_affine(ax, node)
     return ax
 
-def plot_ring():
+def plot_points(ax,list_of_points,size=4,alpha=1,color='black'):
+    mat = np.array(list_of_points)
+    plt.scatter(mat[:,0],mat[:,1],color=color,s=size,alpha=alpha)
+
+
+def plot_ring(ax):
     n, radii = 50, [.7, .95]
     theta = np.linspace(0, 2*np.pi, n, endpoint=True)
     xs = np.outer(radii, np.cos(theta))
     ys = np.outer(radii, np.sin(theta))
-
     # in order to have a closed area, the circles
     # should be traversed in opposite directions
     xs[1,:] = xs[1,::-1]
     ys[1,:] = ys[1,::-1]
 
-    ax = plt.subplot(111, aspect='equal')
     ax.fill(np.ravel(xs), np.ravel(ys), edgecolor='#348ABD')
-
-    plt.show()
