@@ -176,8 +176,8 @@ def plot_multiscale_ransac_affine(ax, model_node):
         _color = (0,0,1,0.05)
     print('plotting ',_scale,_score,len(_points),len(_children))
     plot_affine_set_2d_poly(ax, _model, 50, _scale, _color)
-    plot_points(_points, color="gray", s=4, alpha=0.5)
-    plot_points(_points, alpha=1, s=0.01)  # hack para que el colorbar no quede transparente
+    plot_points(ax,_points, color="gray", size=4, alpha=0.5)
+    plot_points(ax,_points, alpha=1, size=0.01)  # hack para que el colorbar no quede transparente
     for node in _children:
         # TEMPORAL
         #

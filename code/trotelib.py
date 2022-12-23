@@ -269,15 +269,14 @@ def ransac_nfa_affine_uniscale_greedy(points,scale,nsamp,rng):
 def ransac_nfa_affine_multiscale_greedy(points, scale, factor, nsamp, rng, depth=0):
     detected_models = ransac_nfa_affine_uniscale_greedy(points,scale,nsamp, rng)
     nmodels = len(detected_models)
-    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'detected',nmodels)
     if nmodels == 0:
         return ()
     else:
         model_nodes = list()
         for m,p,s in detected_models:
-            pmat = np.array(p)
-            children = ransac_nfa_affine_multiscale_greedy(pmat,scale*factor,factor,nsamp, rng, depth=depth+1)
-            model_nodes.append( (scale*factor,m,s,pmat,children) )
+            children = ransac_nfa_affine_multiscale_greedy(points,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,points,children) )
         return model_nodes
 
 
@@ -342,14 +341,13 @@ def ransac_nfa_affine_uniscale_rafa(points,scale,nsamp,rng):
         # we continue the analysis with the filtered models
         #print("redundant ",len(cand_models)-len(filtered_models),"non-redundant ",len(filtered_models))
         cand_models = filtered_models
-    print("kept ", len(detected_models))
     return detected_models
 
 
 def ransac_nfa_affine_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0):
     detected_models = ransac_nfa_affine_uniscale_rafa(points,scale,nsamp, rng)
     nmodels = len(detected_models)
-    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'nmodels',nmodels)
+    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'detected',nmodels)
     if nmodels == 0:
         return ()
     else:
