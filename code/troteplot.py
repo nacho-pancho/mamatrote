@@ -161,28 +161,33 @@ def plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, sc
     plt.title('detected models')
 
 
-def plot_multiscale_ransac_affine(ax, model_node):
+def plot_multiscale_ransac_affine(ax, model_node, plot_leaves, plot_single_parents, plot_branches):
     """
     :return:
     """
     cmap = cm.get_cmap("jet")
     _scale, _model, _score, _points, _children = model_node
     #if True:
-    if len(_children) == 0:
+    plot_it = False
+    if len(_children) == 0 and plot_leaves:
         _color = (1,0,0,0.05)
-    elif len(_children) == 1:
+        plot_it = True
+    elif len(_children) == 1 and plot_single_parents:
         _color = (0,1,0,0.05)
-    else:
+        plot_it = True
+    elif plot_branches:
         _color = (0,0,1,0.05)
-    print('plotting ',_scale,_score,len(_points),len(_children))
-    plot_affine_set_2d_poly(ax, _model, 50, _scale, _color)
-    plot_points(ax,_points, color="gray", size=4, alpha=0.5)
-    plot_points(ax,_points, alpha=1, size=0.01)  # hack para que el colorbar no quede transparente
+        plot_it = True
+    #print('plotting ',_scale,_score,len(_points),len(_children))
+    if plot_it:
+        plot_affine_set_2d_poly(ax, _model, 50, _scale, _color)
+        plot_points(ax,_points, color="gray", size=4, alpha=0.5)
+        plot_points(ax,_points, alpha=1, size=0.01)  # hack para que el colorbar no quede transparente
     for node in _children:
         # TEMPORAL
         #
         # FIN TEMPORAL
-        plot_multiscale_ransac_affine(ax, node)
+        plot_multiscale_ransac_affine(ax, node, plot_leaves, plot_single_parents, plot_branches)
     return ax
 
 def plot_points(ax,list_of_points,size=4,alpha=1,color='black'):

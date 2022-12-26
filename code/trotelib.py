@@ -35,6 +35,28 @@ def build_scatter_distribution(r, rng, theta=0):
     else:
         return lambda size: rng.power(r-theta,size=size)
 
+def bounding_box(points):
+    if not len(points):
+        return None
+    if not len(points[0]):
+        return None
+    n = len(points[0])
+    _min = tuple(np.min(tuple(p[i] for p in points)) for i in range(n))
+    print(_min)
+    _max = tuple(np.max(tuple(p[i] for p in points)) for i in range(n))
+    return tuple(zip(_min,_max))
+
+def gram_schmidt(V):
+    m,n = V.shape
+    A = np.empty((n,n))
+    A[:m, :] = V[:m,:]/np.outer(np.linalg.norm(V[:m,:],axis=1),np.ones(n))
+    A[m:, :] = np.random.random((n-m,n))
+    G = A[:m, :].T @ A[:m, :]
+    for i in range(m,n):
+        A[i, :] -= G @ A[i, :]
+        A[i,:]  /= np.linalg.norm(A[i,:])
+        G += np.outer(A[i, :],A[i, :])
+    return A
 
 def build_affine_set(list_of_points):
     """
@@ -55,12 +77,15 @@ def build_affine_set(list_of_points):
     if m > 0:
         # construct an orthogonal basis for the span of V and its orthogonal complement
         V = np.array(list_of_points[1:]) - x_0
-        _A = _rng.normal(size=(n,n))
-        _A[:m,:] = V
-        _Q,_ = la.qr(_A.T) # QR operates on columns; we have rows; thus the transpostion
-        _Q = _Q.T
-        V = _Q[:m,:] # basis for the linear part of the affine set
-        W = _Q[m:,:] # orthogonal complement
+        Q = gram_schmidt(V)
+        V = Q[:m,:]
+        W = Q[m:,:]
+        #_A = _rng.normal(size=(n,n))
+        #_A[:m,:] = V
+        #_Q,_ = la.qr(_A.T) # QR operates on columns; we have rows; thus the transpostion
+        #_Q = _Q.T
+        #V = _Q[:m,:] # basis for the linear part of the affine set
+        #W = _Q[m:,:] # orthogonal complement
     else:
         V = np.zeros((0,0)) # a 0-dimensional affine subspace (the point x_0)
         W,_ = la.qr(_rng.normal(size=(n,n)))
@@ -148,7 +173,8 @@ def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro
     c,V,W = _affine_set
     m,n = V.shape
     if model_distro is None:
-        model_distro = lambda x: _rng.uniform(size=x, low=-scatter*10, high=scatter*10)
+        #model_distro = lambda x: _rng.uniform(size=x, low=-scatter*10, high=scatter*10)
+        model_distro = lambda x: _rng.uniform(size=x, low=0, high=scatter*10)
     if scatter_distro is None:
         scatter_distro = build_scatter_distribution(n - m,_rng)
 
@@ -169,10 +195,15 @@ def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro
     return list_of_points
 
 
-def sim_background_points(npoints, n, _rng, bg_scale=1, bg_dist=None):
-    if bg_dist is None:
-        bg_dist = lambda x: _rng.uniform(size=x)
-    return list([bg_dist(n) for i in range(npoints)])
+def sim_background_points(npoints, bounding_box, _rng):
+    m = len(bounding_box) # bounding box is a list of pairs x[i]_min, x[i]_max where i is the dim
+    return tuple(
+        tuple(
+            _rng.uniform(low=bounding_box[i][0],high=bounding_box[i][1])
+            for i in range(m)
+        )
+        for j in range(npoints)
+    )
 
 
 def find_aligned_points(points, affine_set, distance, scale):
