@@ -77,6 +77,38 @@ def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro
         list_of_points.append(x)
     return list_of_points
 
+def sim_affine_patch(_affine_set, _num_points, _rng, scatter = 1.0, scatter_distro=None):
+    """
+    given an affine set, simulate a cloud of points such
+    that the distribution of their distance to the given affine
+    set is distro, and the projection of the points is confined to the patch defined by
+    the points that originated the affine set. This is useful to simulate patches within the affine
+    set, where the patches are defined by the points that were given to create the affine set, that is, the
+    "endpoints" if this was a line in 2D
+    NOT SOLVED YET
+    """
+    c,V,W,P = _affine_set
+    m,n = V.shape
+    if scatter_distro is None:
+        scatter_distro = build_scatter_distribution(n - m,_rng)
+
+    n = len(c)
+    m = len(V)
+    list_of_points = list()
+    for i in range(_num_points):
+        # this is not easy!
+        #b = model_distro((m))
+        #b = 0
+        a = _rng.normal(size=(n-m)) # anisotropic
+        norm = np.linalg.norm(a)
+        d = scatter*scatter_distro(1)
+        a *= d/norm
+        if len(V) > 0:
+            x =  c + b @ V + a @ W
+        else:
+            x =  c + a @ W
+        list_of_points.append(x)
+    return list_of_points
 
 def sim_arc_cloud(npoints, model, scatter, rng):
     center,radius,ang1,ang2 = model
