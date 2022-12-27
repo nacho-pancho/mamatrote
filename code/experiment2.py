@@ -28,9 +28,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
+from trotedata import *
 from  trotelib import *
-
-import matplotlib.cm as cm
 from troteplot import *
 
 
@@ -49,7 +48,7 @@ def model_vs_scale_and_scatter(m,n,
     :return:
     """
     if scatter_dist is None:
-        scatter_dist = build_scatter_distribution(n - m)
+        scatter_dist = build_scatter_distribution(n - m, rng)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
@@ -70,9 +69,12 @@ def model_vs_scale_and_scatter(m,n,
 
 #==========================================================================================
 
+
+
 import argparse
 
-def run_experiment():
+if __name__ == "__main__":
+    plt.close('all')
     ap = argparse.ArgumentParser()
     ap.add_argument("--nsamples", type=int, default=10,
                     help="path indir  where to find original files")
@@ -109,8 +111,3 @@ def run_experiment():
                                      scales,'analysis scale',
                                      nfas,
                                      fbase)
-
-
-if __name__ == "__main__":
-    plt.close('all')
-    run_experiment()

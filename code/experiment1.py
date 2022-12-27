@@ -28,6 +28,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
+from trotedata import *
 from  trotelib import *
 from troteplot import *
 import matplotlib.cm as cm
@@ -47,7 +48,7 @@ def model_vs_scale_and_npoints(m,n,
     :return:
     """
     if scatter_dist is None:
-        scatter_dist = build_scatter_distribution(n - m)
+        scatter_dist = build_scatter_distribution(n - m,rng)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
@@ -71,7 +72,9 @@ def model_vs_scale_and_npoints(m,n,
 
 import argparse
 
-def run_experiment():
+if __name__ == "__main__":
+    print("NFA vs number of points")
+    plt.close('all')
     ap = argparse.ArgumentParser()
     ap.add_argument("--nsamples", type=int, default=10,
                     help="path indir  where to find original files")
@@ -83,34 +86,31 @@ def run_experiment():
                     help="Add this number of pixels to each side of the segmented line / block.")
     ap.add_argument("--seed", type=int, default=42,
                     help="Random seed.")
-    ap.add_argument("--recompute", action="store_true",help="Force recomputation even if result exists.")
+    ap.add_argument("--recompute", action="store_true", help="Force recomputation even if result exists.")
     args = vars(ap.parse_args())
-    nsamp   = args["nsamples"]
-    detail  = args["detail"]
+    nsamp = args["nsamples"]
+    detail = args["detail"]
     npoints = args["npoints"]
     scatter = args["scatter"]
-    seed    = args["seed"]
+    seed = args["seed"]
     rng = random.default_rng(seed)
 
-    Ns     = np.round(np.linspace(max(10,npoints/10),npoints,detail)).astype(int)
-    scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
-    for n in (2,3):
+    Ns = np.round(np.linspace(max(10, npoints / 10), npoints, detail)).astype(int)
+    scales = np.linspace(0.01, 0.4, detail)  # np.logspace(-10,-2,base=2,num=40)
+    for n in (2, 3):
         for m in range(n):
             print(f"n={n} m={m}")
-            fbase  = (f'NFA vs scale and npoints n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
-            print("will perform",len(Ns),"x",len(scales),"tests")
-            if not os.path.exists(fbase+'_z.txt') or args["recompute"]:
-                nfas = model_vs_scale_and_npoints(m,n,Ns,scales,rng,nsamp=nsamp,scatter=scatter)
+            fbase = (f'NFA vs scale and npoints n={n} m={m} s={scatter} N={npoints}').lower().replace(' ',
+                                                                                                      '_').replace(
+                '=', '_')
+            print("will perform", len(Ns), "x", len(scales), "tests")
+            if not os.path.exists(fbase + '_z.txt') or args["recompute"]:
+                nfas = model_vs_scale_and_npoints(m, n, Ns, scales, rng, nsamp=nsamp, scatter=scatter)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
                 np.savetxt(fbase + '_y.txt', Ns)
             else:
-                nfas = np.loadtxt(fbase+'_z.txt')
+                nfas = np.loadtxt(fbase + '_z.txt')
             ax = plot_scores_img(Ns, 'number of points',
                                  scales, 'analysis scale', nfas,
                                  fbase)
-
-if __name__ == "__main__":
-    print("NFA vs number of points")
-    plt.close('all')
-    run_experiment()

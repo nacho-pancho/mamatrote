@@ -30,10 +30,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
+from trotedata import *
 from  trotelib import *
 from troteplot import *
-
-import matplotlib.cm as cm
 
 
 def parallel_vs_distance(m,n,
@@ -53,7 +52,7 @@ def parallel_vs_distance(m,n,
     :return:
     """
     if scatter_dist is None:
-        scatter_dist = build_scatter_distribution(n - m)
+        scatter_dist = build_scatter_distribution(n - m, rng)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
@@ -77,9 +76,13 @@ def parallel_vs_distance(m,n,
                 nfas[i,j] += nfa < 1
     return  nfas/nsamp
 
+#==========================================================================================
+
 import argparse
 
-def run_experiments():
+if __name__ == "__main__":
+    print("NFA vs distance between second structure")
+    plt.close('all')
     ap = argparse.ArgumentParser()
     ap.add_argument("--nsamples", type=int, default=10,
                     help="path indir  where to find original files")
@@ -116,11 +119,3 @@ def run_experiments():
             ax     = plot_scores_img(distances,'distance',
                                      scales,'analysis scale',
                                      nfas,fbase)
-
-#==========================================================================================
-
-
-if __name__ == "__main__":
-    print("NFA vs distance between second structure")
-    plt.close('all')
-    run_experiments()

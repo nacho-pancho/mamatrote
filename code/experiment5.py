@@ -15,18 +15,12 @@ The other problem parameters are:
 Note: the target structure parameters are known (perfectly).
 
 """
-
-import time
 import os
 import numpy as np
 from numpy import random
-from numpy import linalg as la
-from scipy import stats
-from scipy import special
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axis3d
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
+from trotedata import *
 from  trotelib import *
 from troteplot import *
 
@@ -100,7 +94,7 @@ if __name__ == "__main__":
         for m in range(n):
             print(f"n={n} m={m}")
             factors = np.linspace(0.0,(n-m)*0.8,detail)
-            distros = [build_scatter_distribution(n - m, f) for f in factors]
+            distros = [build_scatter_distribution(n - m, rng, f) for f in factors]
             print("will perform ",len(factors),"x",len(scales),"tests")
             x = np.linspace(0,1,100)
             fbase  = (f'NFA vs scale and decay factor n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')

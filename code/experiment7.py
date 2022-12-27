@@ -17,9 +17,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
+from trotedata import *
 from trotelib import *
 from troteplot import *
-from trotedata import generate_dataset
 import argparse
 
 if __name__ == "__main__":

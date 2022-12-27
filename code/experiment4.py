@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-
-import time
-
-import numpy as np
-from numpy import random
-from numpy import linalg as la
-from scipy import stats
-from scipy import special
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axis3d
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-
-from  trotelib import *
-from troteplot import *
-
-import matplotlib.cm as cm
-import os
 """
 This experiment investigates the ability to detect an affine structure
 when there is another confounding structure at a given angle to the first one.
@@ -36,6 +19,15 @@ The other problem parameters are:
 Note: the target structure parameters are known (perfectly).
 """
 
+import numpy as np
+from numpy import random
+import matplotlib.pyplot as plt
+
+from trotedata import *
+from trotelib  import *
+from troteplot import *
+import os
+
 
 def oblique_vs_angle(m, n,
                      angles,
@@ -54,7 +46,7 @@ def oblique_vs_angle(m, n,
     which is oblique to it with a given factor
     """
     if scatter_dist is None:
-        scatter_dist = build_scatter_distribution(n - m)
+        scatter_dist = build_scatter_distribution(n - m, rng)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
@@ -71,7 +63,6 @@ def oblique_vs_angle(m, n,
     for i,ang in enumerate(angles):
         nmodel = int(prop*npoints)
         nback  = npoints - nmodel
-        t0 = time.time()
         # rotate W and last coord of V
         if ang != 0:
             R      = np.eye(n)
