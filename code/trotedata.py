@@ -34,7 +34,7 @@ def sim_affine_set(ambient_dim,affine_dim,distro,rng):
     :return: a pair x_0,(v_1,v_2,...) where x_0 is the offset  and v_1... are the vectors that define the direction of the set
     """
     x0 = distro(ambient_dim)
-    V = distro((affine_dim+1,ambient_dim))
+    V  = distro((affine_dim+1,ambient_dim))
     return build_affine_set(V)
 
 
@@ -53,7 +53,7 @@ def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro
     :return: num_points simulated points whose distance from the affine set
              is distributed as fdist
     """
-    c,V,W = _affine_set
+    c,V,W,P = _affine_set
     m,n = V.shape
     if model_distro is None:
         #model_distro = lambda x: _rng.uniform(size=x, low=-scatter*10, high=scatter*10)

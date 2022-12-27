@@ -51,7 +51,7 @@ def plot_affine_set_2d_poly(ax, affine_set, length, width, color, border=False):
     """
     up to dimension 3
     """
-    c,V,W = affine_set
+    c,V,W,points = affine_set
     m,n = V.shape
     if m == 0: # ball
         ax.add_patch(patches.Circle(c,width))

@@ -63,8 +63,9 @@ def build_affine_set(list_of_points):
 
     :param X: list of points that define the affine set; the first point (x_0) is the offset, the rest, x_1,x_2,
               define the span of the set
-    :return: a triplet (x_0,V,W) where x_0 is the offset, V is a matrix whose rows are (x_1-x_0,x_2-x_0,...),
-             and W is a basis for the orthogonal complement of V
+    :return: a tuple (x_0,V,W,p) where x_0 is the offset, V is a matrix whose rows are (x_1-x_0,x_2-x_0,...),
+             W is a basis for the orthogonal complement of V, and p is the list of poits used to create the set
+             which may later be used to simulate
     """
     #
     # convert X to numpy array, if it is a list
@@ -90,7 +91,7 @@ def build_affine_set(list_of_points):
         V = np.zeros((0,0)) # a 0-dimensional affine subspace (the point x_0)
         W,_ = la.qr(_rng.normal(size=(n,n)))
         W = W.T
-    return x_0, V, W
+    return x_0, V, W, list_of_points
 
 
 def build_affine_set_relative_to(affine_set,dist=0,angle=0):
@@ -136,7 +137,7 @@ def distance_to_affine(list_of_points, affine_set, P=None):
     N = len(list_of_points) # works with matrices and lists alike
     if N == 0:
         return []
-    x_0, V, W = affine_set
+    x_0, V, W,P = affine_set
     Xa = np.array(list_of_points) - x_0
     #print(Xa.shape,W.shape)
     Xp = Xa @ W.T

@@ -72,7 +72,6 @@ def ransac_baseline_test(points,scale,nsamp,rng):
             det += 1
     print('det',det,'not det',len(candidates)-det)
 
-    plt.scatter(a_points[0, 0], a_points[0, 1], alpha=1,s=0.01) # hack para que el colorbar no quede transparente
     plt.colorbar()
     xmin = np.min([p[0] for p in points])
     xmax = np.max([p[0] for p in points])
