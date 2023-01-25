@@ -10,9 +10,10 @@ from scipy import stats
 from scipy import special
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as mplot3d
+import matplotlib.cm as colormaps
 
-from  trotelib import *
-
+from trotelib import *
+from trotedata import *
 
 
 #==========================================================================================
@@ -120,7 +121,69 @@ def test_ks():
     plt.ylabel('logNFA')
     plt.show()
 
+def test_patch_0():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    m = 0
+    n = 2
+    N = 10000
+    a = (5,5)
+    cmap = colormaps.get_cmap("hot")
+    patch = build_patch([a])
+    bounding_box = ((0,10),(0,10))
+    x = np.arange(0,10,0.1)
+    x,y =  np.meshgrid(x,x)
+    points = [(i,j) for i,j in zip(x.ravel(),y.ravel())]
+    distances = distance_to_patch(points,patch)
+    distances = np.minimum(1,distances)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=cmap(distances),s=16)
+    plt.show()
+
+def test_patch_1():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    m = 1
+    n = 2
+    N = 10000
+    a = (3,2)
+    b = (3,6)
+    cmap = colormaps.get_cmap("hot")
+    patch = build_patch([a,b])
+    bounding_box = ((0,10),(0,10))
+    x = np.arange(0,10,0.1)
+    x,y =  np.meshgrid(x,x)
+    points = [(i,j) for i,j in zip(x.ravel(),y.ravel())]
+    distances = distance_to_patch(points,patch)
+    distances = np.minimum(1,distances)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=cmap(distances),s=16)
+    plt.show()
+
+def test_patch_2():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    m = 2
+    n = 2
+    N = 10000
+    a = (2,2)
+    b = (2,8)
+    c = (4,4)
+    cmap = colormaps.get_cmap("hot")
+    patch = build_patch([a,b,c])
+    bounding_box = ((0,10),(0,10))
+    x = np.arange(0,10,0.1)
+    x,y =  np.meshgrid(x,x)
+    points = [(i,j) for i,j in zip(x.ravel(),y.ravel())]
+    distances = distance_to_patch(points,patch)
+    distances = np.minimum(1,distances)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=cmap(distances),s=16)
+    plt.show()
 
 if __name__ == "__main__":
     #test_models_2d()
-    test_models_3d()
+    test_patch_0()

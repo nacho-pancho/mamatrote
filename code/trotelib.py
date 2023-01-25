@@ -58,6 +58,26 @@ def gram_schmidt(V):
         G += np.outer(A[i, :],A[i, :])
     return A
 
+
+def find_aligned_points(points, affine_set, distance, scale):
+    distances = distance(points,affine_set)
+    N = len(points)
+    return list([points[i] for i in range(N) if distances[i] < scale])
+
+
+def subtract_points(a,b):
+    """
+    utility to subract using sets of points
+    """
+    a_aux  = [tuple(c) for c in a]
+    b_aux  = [tuple(c) for c in b]
+    return list(set(a_aux).difference(set(b_aux)))
+
+"""
+=============================
+AFFINE SETS
+=============================
+"""
 def build_affine_set(list_of_points):
     """
 
@@ -74,40 +94,158 @@ def build_affine_set(list_of_points):
     _rng = np.random.default_rng(42)
     x_0 = list_of_points[0]
     n = len(x_0)
-    m = len(list_of_points)-1
+    m = len(list_of_points) - 1
     if m > 0:
         # construct an orthogonal basis for the span of V and its orthogonal complement
         V = np.array(list_of_points[1:]) - x_0
         Q = gram_schmidt(V)
-        V = Q[:m,:]
-        W = Q[m:,:]
-        #_A = _rng.normal(size=(n,n))
-        #_A[:m,:] = V
-        #_Q,_ = la.qr(_A.T) # QR operates on columns; we have rows; thus the transpostion
-        #_Q = _Q.T
-        #V = _Q[:m,:] # basis for the linear part of the affine set
-        #W = _Q[m:,:] # orthogonal complement
+        V = Q[:m, :]
+        W = Q[m:, :]
+        # _A = _rng.normal(size=(n,n))
+        # _A[:m,:] = V
+        # _Q,_ = la.qr(_A.T) # QR operates on columns; we have rows; thus the transpostion
+        # _Q = _Q.T
+        # V = _Q[:m,:] # basis for the linear part of the affine set
+        # W = _Q[m:,:] # orthogonal complement
     else:
-        V = np.zeros((0,0)) # a 0-dimensional affine subspace (the point x_0)
-        W,_ = la.qr(_rng.normal(size=(n,n)))
+        V = np.zeros((0, 0))  # a 0-dimensional affine subspace (the point x_0)
+        W, _ = la.qr(_rng.normal(size=(n, n)))
         W = W.T
     return x_0, V, W, list_of_points
 
+def build_patch(list_of_points):
+    """
+    The patch models have exactly the same data as the affine models,
+    but they are confined to the convex hull of the vertices, which we
+    generically call a "patch", as in a mesh.
+    The first point in the list is kept as an offset.
+    :param list_of_points:
+    :return: a patch model
+    """
+    return build_affine_set(list_of_points)
 
-def build_affine_set_relative_to(affine_set,dist=0,angle=0):
+def is_inside_patch(point, patch):
+    """
+    A point in the patch will be inside the patch if:
+    a) it belongs to the affine space that the patch belongs to
+    b) the linear coefficients of the point w.r.t. the pivot
+    are non-negative and sum up to 1.
+    :param point:
+    :param patch:
+    :return:
+    """
+    return None
+
+
+def project_onto_affine(list_of_points, affine_set):
+    N = len(list_of_points)  # works with matrices and lists alike
+    if N == 0:
+        return []
+    x_0, V, W, P = affine_set
+    Xa = np.array(list_of_points) - x_0
+    # print(Xa.shape,W.shape)
+    Xp = Xa @ V.T
+    return Xp + x_0
+
+def distance_to_patch(list_of_points, patch):
+    """
+    The distance from p to a patch is sqrt(a^2+b^2) where
+    a is the distance from p  to the affine set containing the patch and
+    b is the distance from the projection of p onto the patch.
+    The second is an easy task if the patch is 1D (a segment) or 2D (a triangle),
+    otherwise we need to resort to a linear program.
+    :param list_of_points: self explanatory
+    :param patch: the patch
+    :return: the distance of p to the patch
+    """
+    N = len(list_of_points)  # works with matrices and lists alike
+    if N == 0:
+        return []
+
+    c, V, W, P = patch
+    m, n = V.shape # dim of patch and ambient space
+    if m > 2:
+        print("not implemented")
+        exit(1)
+    elif m == 0:
+        if m == 0: # super easy, a point
+            Xa = np.array(list_of_points) - c
+            return la.norm(Xa,axis=1)
+    else:
+        # a triangle or a segment
+        Xa = np.array(list_of_points) - c
+        if n-m > 0:
+            Xortho = Xa @ W.T
+            do =  la.norm(Xortho, axis=1)
+        else:
+            do = np.zeros(N)
+        Xpara  = Xa @ V.T
+        dp = np.zeros(N)
+        # now the fine part: distance to the affine set within the affine space
+        if m == 1: # easy, a segment
+            # here we take the first point (c) as a reference
+            # and a as the other point that defines the segment
+            # we then express p as c + x * (a-c): x = (p-c)/(a-c)
+            # if 0 <= x <= 1, the point p lies between c and a, so the distance is 0
+            # if x < 0 or x > 1, the distance is corr. |x| or x-1
+            #
+            a = np.array(P[1])
+            ac = c - a
+            dac = la.norm(ac)
+            # note that for the m=1 case, V is (a-c) normalized so that
+            # the coefficient x is precisely Xpara*|c-a|
+            #for i in range(N):
+            #    print(i,c,Xa[i,:],list_of_points[i],Xpara[i])
+            dp = np.maximum(-Xpara,np.maximum(0,Xpara-dac))
+            d =  np.sqrt(dp.ravel()**2 + do**2)
+            return d
+            #return np.sqrt(dp ** 2)
+        if m == 2: # triangle, not so easy
+            #
+            # given the 3 vertices a, b, c, and a point there are 6 distances:
+            # the point to the three segments a-b, b-c, c-a
+            # the point to the three vertices
+            # we can compute all six using the case m== 1 and m == 0 (point)
+            # if the point is inside the triangle, the distance is 0
+            # we can check this by computing the unique representation of p-c in terms of (a-c,b-c)
+            # and checking whether it is a convex combination (coefficients >= 0 and <= 1)
+            # if it is outside, it  is the smallest of all six
+            # notice that there is some redundancy here as the distances to the segments
+            # depend on the vertices too, but it's easier this way
+            #
+            a = np.array(P[1])
+            b = np.array(P[2])
+            # check interior
+            AB = np.array([a-c,b-c]) # a and b as rows
+            ABcoef = np.linalg.solve(AB.T,Xa.T)
+            print(ABcoef.shape)
+            di = [ 1e20*(np.any(c < 0)+(np.sum(c) > 1)) for c in ABcoef.T]
+            ab = build_patch([a,b])
+            bc = build_patch([b,c])
+            ca = build_patch([c,a])
+            dab = distance_to_patch(list_of_points,ab)
+            dbc = distance_to_patch(list_of_points,bc)
+            dca = distance_to_patch(list_of_points,ca)
+            da  = [la.norm(p-a) for p in list_of_points]
+            db  = [la.norm(p-a) for p in list_of_points]
+            dc  = [la.norm(p-a) for p in list_of_points]
+            return np.minimum(np.minimum(di,np.minimum(dab,dbc)),np.minimum(np.minimum(dca,da),np.minimum(db,dc)))
+            #return np.linalg.norm(np.minimum(ABcoef,0),axis=0)
+
+def build_affine_set_relative_to(affine_set, dist=0, angle=0):
     """
     Given an affine set, build another one so that it is at a given angle
     respect to the first dimension (in the first dimension only, not generic rotation)
     or either parallel at a given distance (along the first direction of W)
     """
-    c,V,W = affine_set
-    m,n = V.shape
+    c, V, W = affine_set
+    m, n = V.shape
     n = len(c)
     if angle != 0:
-        R      = np.eye(n)
-        R[0,0] = R[1,1] = np.cos(angle)
-        R[0,1] = np.sin(angle)
-        R[1,0] = -np.sin(angle)
+        R = np.eye(n)
+        R[0, 0] = R[1, 1] = np.cos(angle)
+        R[0, 1] = np.sin(angle)
+        R[1, 0] = -np.sin(angle)
         if m > 0:
             V2 = V @ R
         else:
@@ -116,12 +254,12 @@ def build_affine_set_relative_to(affine_set,dist=0,angle=0):
     else:
         V2 = V
         W2 = W
-    
+
     if dist != 0:
-        c2 = c + dist * W[0,:]
+        c2 = c + dist * W[0, :]
     else:
         c2 = c
-    return (c2,V2,W2)
+    return (c2, V2, W2)
 
 
 def distance_to_affine(list_of_points, affine_set, P=None):
@@ -134,30 +272,14 @@ def distance_to_affine(list_of_points, affine_set, P=None):
     :param P:  projection operator onto the subspace, if available
     :return: Euclidean distance from each point in x to the subspace:  ||x-Px||_2
     """
-    N = len(list_of_points) # works with matrices and lists alike
+    N = len(list_of_points)  # works with matrices and lists alike
     if N == 0:
         return []
-    x_0, V, W,P = affine_set
+    x_0, V, W, P = affine_set
     Xa = np.array(list_of_points) - x_0
-    #print(Xa.shape,W.shape)
+    # print(Xa.shape,W.shape)
     Xp = Xa @ W.T
-    return la.norm(Xp,axis=1)
-
-
-
-def find_aligned_points(points, affine_set, distance, scale):
-    distances = distance(points,affine_set)
-    N = len(points)
-    return list([points[i] for i in range(N) if distances[i] < scale])
-
-
-def subtract_points(a,b):
-    """
-    utility to subract using sets of points
-    """
-    a_aux  = [tuple(c) for c in a]
-    b_aux  = [tuple(c) for c in b]
-    return list(set(a_aux).difference(set(b_aux)))
+    return la.norm(Xp, axis=1)
 
 
 def ransac_affine(points, m, k, _rng):
@@ -326,6 +448,7 @@ def ransac_nfa_affine_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0
             children = ransac_nfa_affine_multiscale_rafa(points,scale*factor,factor,nsamp, rng, depth=depth+1)
             model_nodes.append( (scale*factor,m,s,points,children) )
         return model_nodes
+
 
 #==========================================================================================
 
