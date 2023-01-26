@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """
-This experiment investigates the ability to detect affine structures
-as a function of:
+This experiment investigates the ability to detect an sphere structure
+when there is another confounding structure, parallel to the first one.
+The results are shown as a function of:
 a) the analysis scale, which is a parameter of the framework and
-b) the _scatter_, which is the maximum distance from points of a model to the actual
-   model
+b) the distance between the target and the confounding structure.
+
 The other problem parameters are:
-* scatter distribution is so that the distribution of the
-  distance to the affine set is uniform regardless of the dimension
+
 * proportion of model/background points is 50/50.
 * number of points defaults to 100
-  distance to the affine set is uniform regardless of the dimension
+  distance to the sphere set is uniform regardless of the dimension
 * the experiment is repeated 10 times for 10 different random seeds
+* scatter distribution is so that the distribution of the
+  distance to the sphere set is uniform regardless of the dimension
+* the scatter distance from a point to the structure defaults to 0.1
 
 Note: the target structure parameters are known (perfectly).
-
 """
 
 import time
@@ -33,18 +35,20 @@ from  trotelib import *
 from troteplot import *
 
 
-def model_vs_scale_and_scatter(m,n,
-                               scatters,
-                               scales,
-                               rng,
-                               scatter_dist=None,
-                               bg_dist=None,
-                               bg_scale=1,
-                               npoints=100,
-                               prop=0.5,
-                               nsamp=10):
+def parallel_vs_distance(m,n,
+                         distances,
+                         scales,
+                         rng,
+                         npoints=100,
+                         prop=0.5,
+                         scatter_dist=None,
+                         bg_dist=None,
+                         bg_scale=1,
+                         scatter=0.1,
+                         nsamp=10):
     """
-    see wheter we detect the structure or not depending on how spread the points are from the target structure
+    see wheter we detect the structure when another similar structure is parallel to it
+    at a given distance.
     :return:
     """
     if scatter_dist is None:
@@ -53,27 +57,31 @@ def model_vs_scale_and_scatter(m,n,
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
 
-    affine_set = sim_affine_set(n,m,model_dist,rng)
-    nfas = np.zeros((len(scatters),len(scales)))
-    for i,scat in enumerate(scatters):
-        nmodel = int(np.ceil(prop*npoints))
+    sphere_set_1 = sim_sphere_set(n,m,model_dist,rng)
+    nscales = len(scales)
+    ndist   = len(distances)
+    nfas = np.zeros((ndist,nscales))
+    for i,dist in enumerate(distances):
+        nmodel = int(prop*npoints)
         nback  = npoints - nmodel
+        sphere_set_2 = build_sphere_set_relative_to(sphere_set_1, dist=dist, angle=0)
         for k in range(nsamp):
-            model_points = sim_affine_cloud(affine_set, nmodel, rng, scat, model_dist, scatter_dist)
-            back_points = bg_dist((nback, n))
+            model1_points = sim_sphere_cloud(sphere_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
+            model2_points = sim_sphere_cloud(sphere_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
+            model_points = np.concatenate((model1_points,model2_points))
+            back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
-                nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
-                nfas[i,j] += nfa < 1# lognfa
-    return nfas*(1/nsamp)
+                nfa = nfa_ks(_test_points, sphere_set_1, m, m+1, distance_to_sphere, s)
+                nfas[i,j] += nfa < 1
+    return  nfas/nsamp
 
 #==========================================================================================
-
-
 
 import argparse
 
 if __name__ == "__main__":
+    print("sphere NFA vs distance between second structure")
     plt.close('all')
     ap = argparse.ArgumentParser()
     ap.add_argument("--nsamples", type=int, default=10,
@@ -91,23 +99,23 @@ if __name__ == "__main__":
     nsamp   = args["nsamples"]
     detail  = args["detail"]
     npoints = args["npoints"]
+    scatter = args["scatter"]
     seed    = args["seed"]
     rng = random.default_rng(seed)
 
-    scales   = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
-    scatters = np.linspace(0.01,0.4,detail)
-    for n in (2, 3):
+    scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
+    distances = scatter*np.linspace(0.5,8,detail)
+    for n in (2,3):
         for m in range(n):
             print(f"n={n} m={m}")
-            fbase  = (f'NFA vs scale and scatter n={n} m={m} N={npoints}').lower().replace(' ','_').replace('=','_')
+            fbase  = (f'sphere NFA vs scale and distance n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt') or args["recompute"]:
-                nfas = model_vs_scale_and_scatter(m, n, scatters, scales, rng,nsamp=nsamp,npoints=npoints)
+                nfas = parallel_vs_distance(m, n, distances, scales, rng, nsamp=nsamp, scatter=scatter,npoints=npoints)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
-                np.savetxt(fbase + '_y.txt', scatters)
+                np.savetxt(fbase + '_y.txt', distances)
             else:
                 nfas = np.loadtxt(fbase+'_z.txt')
-            ax     = plot_scores_img(scatters,'model scatter',
+            ax     = plot_scores_img(distances,'distance',
                                      scales,'analysis scale',
-                                     nfas,
-                                     fbase)
+                                     nfas,fbase)

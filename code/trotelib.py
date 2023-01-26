@@ -42,7 +42,6 @@ def bounding_box(points):
         return None
     n = len(points[0])
     _min = tuple(np.min(tuple(p[i] for p in points)) for i in range(n))
-    print(_min)
     _max = tuple(np.max(tuple(p[i] for p in points)) for i in range(n))
     return tuple(zip(_min,_max))
 
@@ -124,18 +123,11 @@ def build_patch(list_of_points):
     """
     return build_affine_set(list_of_points)
 
-def is_inside_patch(point, patch):
-    """
-    A point in the patch will be inside the patch if:
-    a) it belongs to the affine space that the patch belongs to
-    b) the linear coefficients of the point w.r.t. the pivot
-    are non-negative and sum up to 1.
-    :param point:
-    :param patch:
-    :return:
-    """
-    return None
-
+def build_shpere(list_of_points):
+    pmat = np.array(list_of_points)
+    c    = np.mean(pmat,axis=0)
+    r = np.linalg.norm(c-np.array(list_of_points[0]))
+    return (c,r)
 
 def project_onto_affine(list_of_points, affine_set):
     N = len(list_of_points)  # works with matrices and lists alike
@@ -143,7 +135,6 @@ def project_onto_affine(list_of_points, affine_set):
         return []
     x_0, V, W, P = affine_set
     Xa = np.array(list_of_points) - x_0
-    # print(Xa.shape,W.shape)
     Xp = Xa @ V.T
     return Xp + x_0
 
@@ -218,7 +209,6 @@ def distance_to_patch(list_of_points, patch):
             # check interior
             AB = np.array([a-c,b-c]) # a and b as rows
             ABcoef = np.linalg.solve(AB.T,Xa.T)
-            print(ABcoef.shape)
             di = [ 1e20*(np.any(c < 0)+(np.sum(c) > 1)) for c in ABcoef.T]
             ab = build_patch([a,b])
             bc = build_patch([b,c])
@@ -230,7 +220,20 @@ def distance_to_patch(list_of_points, patch):
             db  = [la.norm(p-a) for p in list_of_points]
             dc  = [la.norm(p-a) for p in list_of_points]
             return np.minimum(np.minimum(di,np.minimum(dab,dbc)),np.minimum(np.minimum(dca,da),np.minimum(db,dc)))
-            #return np.linalg.norm(np.minimum(ABcoef,0),axis=0)
+
+def distance_to_sphere(list_of_points, sphere):
+    """
+    This is not the distance to a disk, but the distance to the surface of the sphere.
+    That means that the points inside the sphere will have a positive distance to it.
+    :param list_of_points: self explanatory
+    :param patch: the patch
+    :return: the distance of p to the patch
+    """
+    N = len(list_of_points)  # works with matrices and lists alike
+    c,r = sphere
+    if N == 0:
+        return []
+    return np.abs(np.linalg.norm(np.array(list_of_points)-c,axis=1)-r)
 
 def build_affine_set_relative_to(affine_set, dist=0, angle=0):
     """
@@ -277,7 +280,6 @@ def distance_to_affine(list_of_points, affine_set, P=None):
         return []
     x_0, V, W, P = affine_set
     Xa = np.array(list_of_points) - x_0
-    # print(Xa.shape,W.shape)
     Xp = Xa @ W.T
     return la.norm(Xp, axis=1)
 

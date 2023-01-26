@@ -77,48 +77,53 @@ def sim_affine_cloud(_affine_set, _num_points, _rng, scatter = 1.0, model_distro
         list_of_points.append(x)
     return list_of_points
 
-def sim_affine_patch(_affine_set, _num_points, _rng, scatter = 1.0, scatter_distro=None):
+def sim_patch_cloud(_num_points, _patch, _scatter, _rng):
     """
-    given an affine set, simulate a cloud of points such
-    that the distribution of their distance to the given affine
-    set is distro, and the projection of the points is confined to the patch defined by
-    the points that originated the affine set. This is useful to simulate patches within the affine
-    set, where the patches are defined by the points that were given to create the affine set, that is, the
-    "endpoints" if this was a line in 2D
-    NOT SOLVED YET
+    simulate a cloud of points whose distribution is uniform within the region defined
+    by all points whose distance to the patch is less than a scatter value.
+    We sample values uniformly from a bounding box and keep those inside
     """
-    c,V,W,P = _affine_set
-    m,n = V.shape
-    if scatter_distro is None:
-        scatter_distro = build_scatter_distribution(n - m,_rng)
-
+    c,V,W,P = _patch
+    bbox0  = bounding_box(P)
+    bbox = [(r[0]-_scatter,r[1]+_scatter) for r in bbox0 ]
     n = len(c)
     m = len(V)
-    list_of_points = list()
-    for i in range(_num_points):
-        # this is not easy!
-        #b = model_distro((m))
-        #b = 0
-        a = _rng.normal(size=(n-m)) # anisotropic
-        norm = np.linalg.norm(a)
-        d = scatter*scatter_distro(1)
-        a *= d/norm
-        if len(V) > 0:
-            x =  c + b @ V + a @ W
-        else:
-            x =  c + a @ W
-        list_of_points.append(x)
-    return list_of_points
+    _sim_points = list()
+    _rem_points = _num_points
+    while _rem_points > 0:
+        _raw_points = sim_background_points(_rem_points*2,bbox,_rng)
+        _distances  = distance_to_patch(_raw_points,_patch)
+        _inner_points = [p for p,d in zip (_raw_points,_distances) if d <= _scatter]
+        _sim_points.extend(_inner_points)
+        _rem_points -= len(_inner_points)
+    if len(_sim_points) > _num_points:
+        _sim_points = _sim_points[:_num_points]
+    return _sim_points
 
-def sim_arc_cloud(npoints, model, scatter, rng):
-    center,radius,ang1,ang2 = model
-    a = rng.uniform(size=npoints,low=ang1,high=ang2)
-    r = rng.uniform(size=npoints,low=radius-scatter,high=radius+scatter)
-    x = center[0]+r*np.cos(a)
-    y = center[1]+r*np.sin(a)
+def sim_sphere_cloud(_num_points, _sphere, _scatter, _rng):
+    """
+    simulate a cloud of points whose distribution is uniform within the region defined
+    by all points whose distance to the patch is less than a scatter value.
+    We sample values uniformly from a bounding box and keep those inside
+    """
+    c,r = _sphere
+    c = np.array(c)
+    n = len(c)
+    baux1 = c-r-_scatter
+    baux2 = c+r+_scatter
+    bbox = [(baux1[i],baux2[i]) for i in range(n) ]
+    _sim_points = list()
+    _rem_points = _num_points
+    while _rem_points > 0:
+        _raw_points = sim_background_points(_rem_points*2,bbox,_rng)
+        _distances  = distance_to_sphere(_raw_points,_sphere)
+        _inner_points = [p for p,d in zip (_raw_points,_distances) if d <= _scatter]
+        _sim_points.extend(_inner_points)
+        _rem_points -= len(_inner_points)
+    if len(_sim_points) > _num_points:
+        _sim_points = _sim_points[:_num_points]
+    return _sim_points
 
-def sim_arc(rng):
-    pass
 
 def azucarlito(npoints,scatter,rng):
     # kind of Anarchy symbol with double horizontal bar
@@ -150,12 +155,10 @@ def waffle(npoints, scatter, rng, size = 10, nlines=4):
         b = (i*size/(nlines-1),size)
         row = build_affine_set((a, b))
         models.append(row)
-        print(row)
         a = (0,i*size/(nlines-1))
         b = (size,i*size/(nlines-1))
         col = build_affine_set((a,b))
         models.append( col )
-        print(col )
     nmodels = len(models)
     npermodel = npoints//nmodels
     ground_truth = list()
@@ -174,7 +177,6 @@ def satan(npoints, scatter, rng, size = 5, vert = 5, step=2):
     while True:
         a = (size*np.cos(i*angle), size*np.sin(i*angle))
         b = (size*np.cos((i+step)*angle), size*np.sin((i+step)*angle))
-        print("edge",a,"-",b)
         i = (i + step) % vert
         models.append( build_affine_set((a,b)) )
         if not i:
@@ -186,6 +188,83 @@ def satan(npoints, scatter, rng, size = 5, vert = 5, step=2):
     for model in models:
         model_distro = lambda x: rng.uniform(size=x, low=0, high=10)
         model_points = sim_affine_cloud(model, npermodel, rng, scatter=scatter, model_distro=model_distro)
+        ground_truth.append((model, model_points))
+        all_points.extend(model_points)
+    return all_points, ground_truth
+
+def some_rings(npoints,rng):
+    models = list()
+    ground_truth = list()
+    all_points   = list()
+    npermodel = npoints // 5
+    # ojo
+    model = ((2,6),1.5)
+    model_points = sim_sphere_cloud(npermodel, model, 0.1, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+    # pupila
+    model = ((2,6),0.5)
+    model_points = sim_sphere_cloud(npermodel, model, 0.2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+    # otro ojo
+    model = ((6,6),1)
+    model_points = sim_sphere_cloud(npermodel, model, 0.1, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    return all_points, ground_truth
+
+def carucha(npoints,rng):
+    models = list()
+    ground_truth = list()
+    all_points   = list()
+    npermodel = npoints // 5
+    # cara
+    model = ((5,5),5)
+    model_points = sim_sphere_cloud(npermodel, model, 0.2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+    # nariz
+    model = ((5,4),1)
+    model_points = sim_sphere_cloud(npermodel, model, 0.2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+    # ojo
+    model = ((3,6),2.2)
+    model_points = sim_sphere_cloud(npermodel, model, 0.1, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+    # pupila
+    model = ((3.2,6),0.5)
+    model_points = sim_sphere_cloud(npermodel, model, 0.2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+    # otro ojo
+    model = ((7,6),2)
+    model_points = sim_sphere_cloud(npermodel, model, 0.1, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+    # pupila
+    model = ((7,6),0.7)
+    model_points = sim_sphere_cloud(npermodel, model, 0.2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    return all_points, ground_truth
+
+def collar(npoints, scatter, rng, big_radius = 5, small_radius = 1, rings = 7):
+    models = list()
+    angle = 2.0*np.pi/rings
+    for i in range(rings):
+        c = (big_radius * np.cos(i*angle), big_radius * np.sin(i*angle))
+        models.append( (c, small_radius) )
+    nmodels = len(models)
+    npermodel = npoints//nmodels
+    ground_truth = list()
+    all_points   = list()
+    for model in models:
+        model_points = sim_sphere_cloud(npermodel, model, scatter, rng)
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth

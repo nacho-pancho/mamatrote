@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-This experiment investigates the ability to detect an affine structure
+This experiment investigates the ability to detect an sphere structure
 when there is another confounding structure at a given angle to the first one.
 The results are shown as a function of:
 a) the analysis scale, which is a parameter of the framework and
@@ -10,10 +10,10 @@ The other problem parameters are:
 
 * proportion of model/background points is 50/50.
 * number of points defaults to 100
-  distance to the affine set is uniform regardless of the dimension
+  distance to the sphere set is uniform regardless of the dimension
 * the experiment is repeated 10 times for 10 different random seeds
 * scatter distribution is so that the distribution of the
-  distance to the affine set is uniform regardless of the dimension
+  distance to the sphere set is uniform regardless of the dimension
 * the scatter distance from a point to the structure defaults to 0.1
 
 Note: the target structure parameters are known (perfectly).
@@ -51,12 +51,12 @@ def oblique_vs_angle(m, n,
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
 
-    # we rotate about the z axis, so we need an affine set that is orthogonal to the z axis
+    # we rotate about the z axis, so we need an sphere set that is orthogonal to the z axis
     c = np.zeros(n)
     I = np.eye(n)
     V = I[:m,:]
     W = I[m:,:]
-    affine_set_1 = (c,V,W)
+    sphere_set_1 = (c,V,W)
     nscales = len(scales)
     nang   = len(angles)
     nfas = np.zeros((nang,nscales))
@@ -74,17 +74,17 @@ def oblique_vs_angle(m, n,
             else:
                 V2 = V
             W2 = W @ R
-            affine_set_2 = (c,V2,W2)
+            sphere_set_2 = (c,V2,W2)
         else:
-            affine_set_2 = affine_set_1
+            sphere_set_2 = sphere_set_1
         for k in range(nsamp):
-            model1_points = sim_affine_cloud(affine_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
-            model2_points = sim_affine_cloud(affine_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
+            model1_points = sim_sphere_cloud(sphere_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
+            model2_points = sim_sphere_cloud(sphere_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
             back_points  = bg_dist((nback, n))
             model_points = np.concatenate((model1_points,model2_points))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
-                nfa = nfa_ks(_test_points, affine_set_1, m, m+1, distance_to_affine, s)
+                nfa = nfa_ks(_test_points, sphere_set_1, m, m+1, distance_to_sphere, s)
                 nfas[i,j] += nfa < 1
     return  nfas/nsamp
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     for n in (2,3):
         for m in range(1,n):
             print(f"n={n} m={m}")
-            fbase  = (f'NFA vs scale and angle n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
+            fbase  = (f'sphere NFA vs scale and angle n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt') or args["recompute"]:
                 nfas = oblique_vs_angle(m, n, angles, scales, rng, nsamp=nsamp, npoints=npoints, scatter=scatter)
                 np.savetxt(fbase + '_z.txt', nfas)

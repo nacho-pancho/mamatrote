@@ -184,6 +184,79 @@ def test_patch_2():
     plt.scatter(mat[:,0],mat[:,1],c=cmap(distances),s=16)
     plt.show()
 
+def test_sim_patch_2():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    m = 2
+    n = 2
+    N = 5000
+    a = (2,2)
+    b = (2,8)
+    c = (4,4)
+    #cmap = colormaps.get_cmap("hot")
+    patch = build_patch([a,b,c])
+    points = sim_patch_cloud(N,patch,0.5,rng)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
+    bbox0 = bounding_box([a,b,c])
+    bbox = [(r[0]-2,r[1]+2) for r in bbox0 ]
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
+def test_sim_sphere_2d(): #aka circle
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    m = 2
+    n = 2
+    N = 5000
+    c = (4,4)
+    r = 3
+    sphere = (c,r)
+    points = sim_sphere_cloud(N,sphere,0.5,rng)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
+def test_carucha():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    points, gt = carucha(4000,rng)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
+def test_collar():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    points, gt = collar(4000,0.2,rng,big_radius=3,rings=9)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
+    #plt.xlim(0,10)
+    #plt.ylim(0,10)
+    plt.show()
+
+def test_some_rings():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    points, gt = some_rings(4000,rng)
+    mat = np.array(points)
+    plt.figure(figsize=(10,10))
+    plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
 if __name__ == "__main__":
     #test_models_2d()
-    test_patch_0()
+    test_carucha()
+    #test_collar()
+    test_some_rings()

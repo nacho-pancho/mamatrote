@@ -1,75 +1,88 @@
 #!/usr/bin/env python3
 """
-This experiment investigates the ability to detect affine structures
-as a function of:
+This experiment investigates the ability to detect an affine structure
+when there is another confounding structure, parallel to the first one.
+The results are shown as a function of:
 a) the analysis scale, which is a parameter of the framework and
-b) the scatter distribution, ranging from the uniform (default) distribution to a 1/x^2 one
+b) the distance between the target and the confounding structure.
 
 The other problem parameters are:
-* scatter distance 0.1
+
 * proportion of model/background points is 50/50.
 * number of points defaults to 100
   distance to the affine set is uniform regardless of the dimension
 * the experiment is repeated 10 times for 10 different random seeds
+* scatter distribution is so that the distribution of the
+  distance to the affine set is uniform regardless of the dimension
+* the scatter distance from a point to the structure defaults to 0.1
 
 Note: the target structure parameters are known (perfectly).
-
 """
+
+import time
 import os
 import numpy as np
 from numpy import random
+from numpy import linalg as la
+from scipy import stats
+from scipy import special
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axis3d
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 from trotedata import *
 from  trotelib import *
 from troteplot import *
 
-import matplotlib.cm as cm
 
-
-
-
-def model_vs_scale_and_distro(m,n,
-                              scatter_distros,
-                              scales,
-                              rng,
-                              scatter=0.1,
-                              bg_dist=None,
-                              bg_scale=1,
-                              prop=0.5,
-                              nsamp=10,
-                              npoints=100):
+def parallel_vs_distance(m,n,
+                         distances,
+                         scales,
+                         rng,
+                         npoints=100,
+                         prop=0.5,
+                         scatter_dist=None,
+                         bg_dist=None,
+                         bg_scale=1,
+                         scatter=0.1,
+                         nsamp=10):
     """
-    see wheter we detect the structure or not depending on how concentrated the points are around the structure
+    see wheter we detect the structure when another similar structure is parallel to it
+    at a given distance.
     :return:
     """
+    if scatter_dist is None:
+        scatter_dist = build_scatter_distribution(n - m, rng)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
     model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
 
-    affine_set = sim_affine_set(n,m,model_dist,rng)
-    ndistros = len(scatter_distros)
-    nscales  = len(scales)
-    nfas = np.zeros((ndistros,nscales))
-    for i,scatdist in enumerate(scatter_distros):
-        nmodel = int(np.ceil(prop*npoints))
+    affine_set_1 = sim_affine_set(n,m,model_dist,rng)
+    nscales = len(scales)
+    ndist   = len(distances)
+    nfas = np.zeros((ndist,nscales))
+    for i,dist in enumerate(distances):
+        nmodel = int(prop*npoints)
         nback  = npoints - nmodel
+        affine_set_2 = build_affine_set_relative_to(affine_set_1, dist=dist, angle=0)
         for k in range(nsamp):
-            model_points = sim_affine_cloud(affine_set, nmodel, rng, scatter, model_dist, scatter_distro=scatdist)
-            back_points = bg_dist((nback, n))
+            model1_points = sim_affine_cloud(affine_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
+            model2_points = sim_affine_cloud(affine_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
+            model_points = np.concatenate((model1_points,model2_points))
+            back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
-                nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
+                nfa = nfa_ks(_test_points, affine_set_1, m, m+1, distance_to_affine, s)
                 nfas[i,j] += nfa < 1
-    return nfas*(1/nsamp)
-
-
+    return  nfas/nsamp
 
 #==========================================================================================
 
 import argparse
 
 if __name__ == "__main__":
+    print("affine NFA vs distance between second structure")
+    plt.close('all')
     ap = argparse.ArgumentParser()
     ap.add_argument("--nsamples", type=int, default=10,
                     help="path indir  where to find original files")
@@ -89,22 +102,20 @@ if __name__ == "__main__":
     scatter = args["scatter"]
     seed    = args["seed"]
     rng = random.default_rng(seed)
-    scales = np.linspace(scatter/10,scatter*4,detail)
+
+    scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
+    distances = scatter*np.linspace(0.5,8,detail)
     for n in (2,3):
         for m in range(n):
             print(f"n={n} m={m}")
-            factors = np.linspace(0.0,(n-m)*0.8,detail)
-            distros = [build_scatter_distribution(n - m, rng, f) for f in factors]
-            print("will perform ",len(factors),"x",len(scales),"tests")
-            x = np.linspace(0,1,100)
-            fbase  = (f'NFA vs scale and decay factor n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
+            fbase  = (f'affine NFA vs scale and distance n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt') or args["recompute"]:
-                nfas = model_vs_scale_and_distro(m, n, distros, scales, rng, nsamp=nsamp, npoints=npoints, scatter=scatter)
+                nfas = parallel_vs_distance(m, n, distances, scales, rng, nsamp=nsamp, scatter=scatter,npoints=npoints)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
-                np.savetxt(fbase + '_y.txt', factors)
+                np.savetxt(fbase + '_y.txt', distances)
             else:
                 nfas = np.loadtxt(fbase+'_z.txt')
-            ax     = plot_scores_img(factors,'exponential factor',
+            ax     = plot_scores_img(distances,'distance',
                                      scales,'analysis scale',
                                      nfas,fbase)
