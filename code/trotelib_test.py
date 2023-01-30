@@ -225,7 +225,7 @@ def test_sim_sphere_2d(): #aka circle
 def test_carucha():
     import matplotlib.pyplot as plt
     rng = random.default_rng()
-    points, gt = carucha(4000,rng)
+    points, gt = carucha(1000,rng)
     mat = np.array(points)
     plt.figure(figsize=(10,10))
     plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
@@ -259,8 +259,61 @@ def test_some_rings():
     plt.ylim(0,10)
     plt.show()
 
+def test_clusters_and_lines():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    points, gt = clusters_and_lines(400,0.2, rng)
+    for g in gt:
+        print(g[0])
+    mat = np.array(points)
+    fig = plt.figure(figsize=(10,10))
+    ax = fig.add_subplot()
+    ax.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2),s=4)
+    rings = [tmp[0] for tmp in gt]
+    #for r in rings:
+    #    plot_sphere_2d(ax,r,scatter=0.2)
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
+def test_clusters_and_circles():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    points, gt = clusters_and_circles(1000,0.2, rng)
+    mat = np.array(points)
+    fig = plt.figure(figsize=(10,10))
+    ax = fig.add_subplot()
+    ax.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2),s=4)
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
+def test_lines_and_circles():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    points, gt = lines_and_circles(1000,0.2, rng)
+    mat = np.array(points)
+    fig = plt.figure(figsize=(10,10))
+    ax = fig.add_subplot()
+    ax.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2),s=4)
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
+def test_clusters_and_lines_and_circles():
+    import matplotlib.pyplot as plt
+    rng = random.default_rng()
+    points, gt = clusters_and_lines_and_circles(1000,0.2, rng)
+    mat = np.array(points)
+    fig = plt.figure(figsize=(10,10))
+    ax = fig.add_subplot()
+    ax.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2),s=4)
+    plt.xlim(0,10)
+    plt.ylim(0,10)
+    plt.show()
+
 if __name__ == "__main__":
     #test_models_2d()
     #test_carucha()
     #test_collar()
-    test_some_rings()
+    test_clusters_and_lines_and_circles()

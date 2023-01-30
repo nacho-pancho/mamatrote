@@ -51,9 +51,9 @@ def model_vs_scale_and_npoints(m,n,
         scatter_dist = build_scatter_distribution(n - m,rng)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
+    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
 
-    sphere_set_1 = sim_sphere_model(n, m, model_dist, rng)
+    sphere_set_1 = sim_sphere_model(bounding_box, rng)
     nscales = len(scales)
     nnp   = len(npointses)
     nfas = np.zeros((nnp,nscales))
@@ -61,7 +61,7 @@ def model_vs_scale_and_npoints(m,n,
         nmodel = int(prop*npoints)
         nback  = npoints - nmodel
         for k in range(nsamp):
-            model_points = sim_ring_points(sphere_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
+            model_points = sim_ring_points(nmodel, sphere_set_1, scatter, rng)
             back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):

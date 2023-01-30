@@ -51,15 +51,17 @@ def model_vs_scale_and_scatter(m,n,
         scatter_dist = build_scatter_distribution(n - m, rng)
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
 
-    sphere_set = sim_sphere_set(n,m,model_dist,rng)
+    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
+
+    sphere_set = sim_sphere_model(bounding_box, rng)
+
     nfas = np.zeros((len(scatters),len(scales)))
     for i,scat in enumerate(scatters):
         nmodel = int(np.ceil(prop*npoints))
         nback  = npoints - nmodel
         for k in range(nsamp):
-            model_points = sim_ring_points(sphere_set, nmodel, rng, scat, model_dist, scatter_dist)
+            model_points = sim_ring_points(nmodel, sphere_set, scat, rng)
             back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):

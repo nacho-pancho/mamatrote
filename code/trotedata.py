@@ -83,12 +83,12 @@ def sim_affine_points(_affine_set, _num_points, bounding_box, scatter, _rng, sca
              is distributed as fdist
     """
     c,V,W,P = _affine_set
-    m,n = V.shape
+    n = len(c)
+    m = len(V)
     if scatter_distro is None:
         scatter_distro = build_scatter_distribution(n - m,_rng)
 
     bbox_diameter = bounding_box_diameter(bounding_box)
-
     n = len(c)
     m = len(V)
     list_of_points = list()
@@ -101,9 +101,11 @@ def sim_affine_points(_affine_set, _num_points, bounding_box, scatter, _rng, sca
             # sample a point along the affine model so that it
             # is uniformly distributed within the bounding box
             b = _rng.uniform(low=-bbox_diameter, high=bbox_diameter, size = m)
-            while not inside_bounding_box([b],bounding_box)[0]:
+            aux = c + b @ V
+            while not inside_bounding_box([aux],bounding_box)[0]:
                 b = _rng.uniform(low=-bbox_diameter, high=bbox_diameter, size = m)
-            x =  c + b @ V + a @ W
+                aux = c + b @ V
+            x = aux + a @ W
         else:
             x =  c + a @ W
         list_of_points.append(x)
@@ -155,14 +157,13 @@ def sim_sphere_model(bounding_box, rng):
     max_rad = np.min(
         np.array(
             [
-                min(np.absabs(c[i] - bounding_box[i][0]), np.abs(c[i] - bounding_box[i][1]))
+                min(np.abs(c[i] - bounding_box[i][0]), np.abs(c[i] - bounding_box[i][1]))
                 for i in range(m)
             ]
         )
     )
     r = rng.uniform(low=0, high=max_rad)
-    return build_affine_set(V)
-
+    return (c,r)
 
 
 def sim_ring_points(_num_points, _sphere, _scatter, _rng):
@@ -336,6 +337,184 @@ def collar(npoints, scatter, rng, big_radius = 5, small_radius = 1, rings = 7):
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth
+
+def clusters_and_lines(npoints, scatter, rng):
+    models = list()
+    ground_truth = list()
+    all_points   = list()
+    bounding_box = ((0,10),(0,10))
+    nmodels = 4
+    npermodel = npoints // nmodels
+    # clusters
+    c = [(2,5)]
+    model = build_affine_set(c)
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    c = [(8,5)]
+    model = build_affine_set(c)
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    # lines
+    a = (0,0)
+    b = (10,10)
+    model = build_affine_set([a,b])
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    a = (0,10)
+    b = (10,0)
+    model = build_affine_set([a,b])
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    return all_points, ground_truth
+
+
+def clusters_and_circles(npoints, scatter, rng):
+    models = list()
+    ground_truth = list()
+    all_points   = list()
+    bounding_box = ((0,10),(0,10))
+    nmodels = 4
+    npermodel = npoints // nmodels
+
+    # clusters
+    c = [(2,5)]
+    model = build_affine_set(c)
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter*2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    c = [(8,5)]
+    model = build_affine_set(c)
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter*2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    # circles
+    model = [(5,2),1.5]
+    models.append(model)
+    model_points = sim_ring_points(npermodel, model, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    model = [(5,7),2]
+    models.append(model)
+    model_points = sim_ring_points(npermodel, model, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    return all_points, ground_truth
+
+
+def lines_and_circles(npoints, scatter, rng):
+    models = list()
+    ground_truth = list()
+    all_points   = list()
+    bounding_box = ((0,10),(0,10))
+    nmodels = 4
+    npermodel = npoints // nmodels
+
+    # lines
+    a = (0,0)
+    b = (10,10)
+    model = build_affine_set([a,b])
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    a = (0,10)
+    b = (10,0)
+    model = build_affine_set([a,b])
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    # circles
+    model = [(5,2),1.5]
+    models.append(model)
+    model_points = sim_ring_points(npermodel, model, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    model = [(5,8),1]
+    models.append(model)
+    model_points = sim_ring_points(npermodel, model, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    return all_points, ground_truth
+
+
+def clusters_and_lines_and_circles(npoints, scatter, rng):
+    models = list()
+    ground_truth = list()
+    all_points   = list()
+    bounding_box = ((0,10),(0,10))
+    nmodels = 4
+    npermodel = npoints // nmodels
+
+    # clusters
+    c = [(2,5)]
+    model = build_affine_set(c)
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter*2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    c = [(8,5)]
+    model = build_affine_set(c)
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter*2, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    # lines
+    a = (0,0)
+    b = (10,10)
+    model = build_affine_set([a,b])
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    a = (0,10)
+    b = (10,0)
+    model = build_affine_set([a,b])
+    models.append(model)
+    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    # circles
+    model = [(5,2),1.5]
+    models.append(model)
+    model_points = sim_ring_points(npermodel, model, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    model = [(5,8),1]
+    models.append(model)
+    model_points = sim_ring_points(npermodel, model, scatter, rng)
+    ground_truth.append((model, model_points))
+    all_points.extend(model_points)
+
+    return all_points, ground_truth
+
 
 def generate_dataset(name,npoints,scatter,rng):
     if name == "azucarlito":
