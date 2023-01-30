@@ -33,7 +33,7 @@ def ransac_baseline_test(points,scale,nsamp,rng):
     candidates = ransac_patch(points,m,nsamp,rng)
     print("FUUU")
     print(candidates)
-    cmap = cm.get_cmap("viridis")#LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
+    cmap = cm.get_cmap("viridis")
     nfas= list()
     counts = list()
     for cand in candidates:
@@ -44,7 +44,7 @@ def ransac_baseline_test(points,scale,nsamp,rng):
     # for debug:
     #
     idx = np.argsort(counts)
-    nfas_sorted = np.array(nfas)[idx]
+    nfas_sorted   = np.array(nfas)[idx]
     counts_sorted = np.array(counts)[idx]
     for nfa,cnt in zip(nfas_sorted,counts_sorted):
         print('npoints',cnt,'nfa',nfa)
@@ -66,7 +66,7 @@ def ransac_baseline_test(points,scale,nsamp,rng):
         color=cmap(nfa/max_nfa)
         if nfa > 0:
             color = (*color[:3],0.2)
-            plot_patch_set_2d_poly(ax, cand, 50, scale, color)
+            plot_patch_2d_poly(ax, cand, 50, scale, color)
             a_points = np.array(find_aligned_points(points,cand,distance_to_patch,scale))
             plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
             det += 1

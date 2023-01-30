@@ -14,7 +14,7 @@ import matplotlib.cm as colormaps
 
 from trotelib import *
 from trotedata import *
-
+from troteplot import *
 
 #==========================================================================================
 def test_models_2d():
@@ -23,10 +23,10 @@ def test_models_2d():
     m = 1
     rng = random.default_rng(42)
     distro0 = lambda x: rng.uniform(size=x, low=0, high=1)
-    affine_set = sim_affine_set(n, m, distro0)
+    affine_set = sim_affine_model(n, m, distro0)
     d1 = lambda x: rng.uniform(size=x, low=0, high=2)
     d2 = lambda x: rng.uniform(size=x, high=0.1)
-    fg_points = sim_affine_cloud(affine_set, N, d1, d2)
+    fg_points = sim_affine_points(affine_set, N, d1, d2)
     bg_points = rng.uniform(size=(N,2), low=-2,high=2)
     test_points = np.concatenate((fg_points, bg_points))
     x_0, V, W = affine_set
@@ -48,10 +48,10 @@ def test_models_3d():
     scatter = 1
     rng = random.default_rng(42)
     distro0 = lambda x: rng.uniform(size=x, low=0, high=1)
-    affine_set = sim_affine_set(n, m, distro0)
+    affine_set = sim_affine_model(n, m, distro0)
     d1 = lambda x: rng.uniform(size=x, low=0, high=scatter*10)
     d2 = lambda x: rng.uniform(size=x, high=0.1)
-    fg_points = sim_affine_cloud(affine_set, N, scatter, d1, d2)
+    fg_points = sim_affine_points(affine_set, N, scatter, d1, d2)
     bg_points = rng.uniform(size=(N,n), low=-2,high=2)
     test_points = np.concatenate((fg_points, bg_points))
     x_0, V, W = affine_set
@@ -73,10 +73,10 @@ def test_ks():
     n = 2
     N = 10000
     distro0 = lambda x: rng.uniform(size=x, low=0, high=1)
-    affine_set = sim_affine_set(n, m, distro0)
+    affine_set = sim_affine_model(n, m, distro0)
     d1 = lambda x: rng.uniform(size=x, low=-2, high=2)
     d2 = lambda x: rng.laplace(size=x, scale=0.2)
-    test_points = sim_affine_cloud(affine_set, N, d1, d2)
+    test_points = sim_affine_points(affine_set, N, d1, d2)
     mm = np.min(test_points)
     MM = np.max(test_points)
     test_points = np.concatenate((test_points, (MM - mm) * random.rand(10 * N, 2) + mm))
@@ -86,7 +86,7 @@ def test_ks():
     c = x_0 + W[0]
 
     scale = 0.5
-    affine_set2 = sim_affine_set(n, m, distro0)
+    affine_set2 = sim_affine_model(n, m, distro0)
     points = np.copy(test_points[:2])
     points += rng.normal(0, 0.01, size=points.shape)
     affine_set3 = build_affine_set(points)
@@ -195,7 +195,7 @@ def test_sim_patch_2():
     c = (4,4)
     #cmap = colormaps.get_cmap("hot")
     patch = build_patch([a,b,c])
-    points = sim_patch_cloud(N,patch,0.5,rng)
+    points = sim_patch_points(N, patch, 0.5, rng)
     mat = np.array(points)
     plt.figure(figsize=(10,10))
     plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
@@ -214,7 +214,7 @@ def test_sim_sphere_2d(): #aka circle
     c = (4,4)
     r = 3
     sphere = (c,r)
-    points = sim_sphere_cloud(N,sphere,0.5,rng)
+    points = sim_ring_points(N, sphere, 0.5, rng)
     mat = np.array(points)
     plt.figure(figsize=(10,10))
     plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
@@ -249,14 +249,18 @@ def test_some_rings():
     rng = random.default_rng()
     points, gt = some_rings(4000,rng)
     mat = np.array(points)
-    plt.figure(figsize=(10,10))
-    plt.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
+    fig = plt.figure(figsize=(10,10))
+    ax = fig.add_subplot()
+    ax.scatter(mat[:,0],mat[:,1],c=(0,0,0,0.2))
+    rings = [tmp[0] for tmp in gt]
+    for r in rings:
+        plot_sphere_2d(ax,r,scatter=0.2)
     plt.xlim(0,10)
     plt.ylim(0,10)
     plt.show()
 
 if __name__ == "__main__":
     #test_models_2d()
-    test_carucha()
+    #test_carucha()
     #test_collar()
     test_some_rings()

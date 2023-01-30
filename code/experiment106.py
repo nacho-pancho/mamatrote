@@ -33,11 +33,11 @@ def ransac_baseline_test(points,scale,nsamp,rng):
     candidates = ransac_affine(points,m,nsamp,rng)
     print("FUUU")
     print(candidates)
-    cmap = cm.get_cmap("viridis")#LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
+    cmap = cm.get_cmap("viridis")
     nfas= list()
     counts = list()
     for cand in candidates:
-        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, ntests=N**2, return_counts=True)
+        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_patch, scale, ntests=N**2, return_counts=True)
         nfas.append(-np.log10(nfa))
         counts.append(count)
     #

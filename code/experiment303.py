@@ -66,8 +66,8 @@ def parallel_vs_distance(m,n,
         nback  = npoints - nmodel
         sphere_set_2 = build_sphere_set_relative_to(sphere_set_1, dist=dist, angle=0)
         for k in range(nsamp):
-            model1_points = sim_sphere_cloud(sphere_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
-            model2_points = sim_sphere_cloud(sphere_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
+            model1_points = sim_ring_points(sphere_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
+            model2_points = sim_ring_points(sphere_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
             model_points = np.concatenate((model1_points,model2_points))
             back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))

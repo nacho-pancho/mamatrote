@@ -59,7 +59,7 @@ def model_vs_scale_and_scatter(m,n,
         nmodel = int(np.ceil(prop*npoints))
         nback  = npoints - nmodel
         for k in range(nsamp):
-            model_points = sim_patch_cloud(patch_set, nmodel, rng, scat, model_dist, scatter_dist)
+            model_points = sim_patch_points(patch_set, nmodel, rng, scat, model_dist, scatter_dist)
             back_points = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):

@@ -45,9 +45,8 @@ def model_vs_scale_and_distro(m,n,
     """
     if bg_dist is None:
         bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
-
-    affine_set = sim_affine_set(n,m,model_dist,rng)
+    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
+    affine_set = sim_affine_model(m, bounding_box, rng)
     ndistros = len(scatter_distros)
     nscales  = len(scales)
     nfas = np.zeros((ndistros,nscales))
@@ -55,8 +54,8 @@ def model_vs_scale_and_distro(m,n,
         nmodel = int(np.ceil(prop*npoints))
         nback  = npoints - nmodel
         for k in range(nsamp):
-            model_points = sim_affine_cloud(affine_set, nmodel, rng, scatter, model_dist, scatter_distro=scatdist)
-            back_points = bg_dist((nback, n))
+            model_points = sim_affine_points(affine_set, nmodel, bounding_box, scatter, rng, scatter_distro=scatdist)
+            back_points  = sim_points(nback, bounding_box, rng)
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)

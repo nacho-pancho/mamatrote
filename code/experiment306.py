@@ -65,18 +65,18 @@ def ransac_baseline_test(points,scale,nsamp,rng):
         cand,nfa = cs
         color=cmap(nfa/max_nfa)
         if nfa > 0:
-            color = (*color[:3],0.2)
-            plot_sphere_set_2d_poly(ax, cand, 50, scale, color)
+            color = (*color[:3],0.1)
+            plot_sphere_2d(ax, cand, scale, color)
             a_points = np.array(find_aligned_points(points,cand,distance_to_sphere,scale))
             plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
             det += 1
     print('det',det,'not det',len(candidates)-det)
 
     plt.colorbar()
-    xmin = np.min([p[0] for p in points])
-    xmax = np.max([p[0] for p in points])
-    ymin = np.min([p[1] for p in points])
-    ymax = np.max([p[1] for p in points])
+    xmin = np.min([p[0] for p in points])-5
+    xmax = np.max([p[0] for p in points])+5
+    ymin = np.min([p[1] for p in points])-5
+    ymax = np.max([p[1] for p in points])+5
     xlen = xmax-xmin
     ylen = ymax-ymin
     maxlen = max(xlen,ylen)
@@ -90,13 +90,13 @@ import argparse
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--nsamples", type=int, default=200,
+    ap.add_argument("--nsamples", type=int, default=1000,
                     help="number of RANSAC samples to draw")
     ap.add_argument("--npoints", type=int, default=1000,
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
     ap.add_argument("--scatter", type=float, default=0.2,
                     help="How far are the model points scattered from the ground truth element.")
-    ap.add_argument("--scale", type=float, default=0.4,
+    ap.add_argument("--scale", type=float, default=0.2,
                     help="Analysis scale.")
     ap.add_argument("--seed", type=int, default=42,
                     help="Random seed.")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     scale = args["scale"]
     seed = args["seed"]
     rng = random.default_rng(seed)
-    all_points, ground_truth = azucarlito(npoints, scatter,rng)
+    all_points, ground_truth = some_rings(npoints, 0.1, rng)
     nfas = ransac_baseline_test(all_points, scale, nransac, rng)
 
     fbase = (f'baseline RANSAC test for a fixed pattern of 4 lines o a plane').lower().replace(' ', '_').replace('=',

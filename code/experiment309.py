@@ -18,7 +18,7 @@ from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from trotelib import *
 from troteplot import *
-from trotedata import generate_dataset
+from trotedata import *
 import argparse
 
 if __name__ == "__main__":
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     dataset = args["dataset"]
     rng = random.default_rng(seed)
     #
-    all_points, ground_truth = generate_dataset(dataset, npoints, scatter, rng)
+    all_points, ground_truth = some_rings(npoints, scatter, rng)
 
     bbox = bounding_box(all_points)
     bg_points = sim_background_points(args["nbpoints"],bbox,rng)
@@ -72,5 +72,5 @@ if __name__ == "__main__":
 
     ax = plt.subplot(1,2,2)
     plot_uniscale_ransac_sphere(ax, all_points, params, scores, points, scale)
-    plt.savefig('uniscale_nfa.svg')
+    plt.savefig('sphere_uniscale_nfa_rafa.svg')
     plt.show()

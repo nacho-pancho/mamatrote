@@ -66,8 +66,8 @@ def parallel_vs_distance(m,n,
         nback  = npoints - nmodel
         patch_set_2 = build_patch_set_relative_to(patch_set_1, dist=dist, angle=0)
         for k in range(nsamp):
-            model1_points = sim_patch_cloud(patch_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
-            model2_points = sim_patch_cloud(patch_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
+            model1_points = sim_patch_points(patch_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
+            model2_points = sim_patch_points(patch_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
             model_points = np.concatenate((model1_points,model2_points))
             back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))

@@ -79,6 +79,61 @@ def plot_affine_set_2d_poly(ax, affine_set, length, width, color, border=False):
         #ax.fill( x, y, color=color)
 
 
+def plot_patch_2d(ax, affine_set, scatter, color, border=False):
+    """
+    not really working; using the affine one for now
+    """
+    c,V,W,P = affine_set
+    length = np.linalg.norm(np.array(P[1])-np.array(P[0]))
+    width = scatter
+    m,n = V.shape
+    if m == 0: # ball
+        ax.add_patch(patches.Circle(c,width))
+    elif m == 1:
+        if border:
+            edgecolor = color
+        else:
+            edgecolor = (0,0,0,0)
+        a = (c[0] - length*V[0, 0], c[1] - length*V[0, 1])
+        b = (c[0] + length*V[0, 0], c[1] + length * V[0, 1])
+        #plt.plot((a[0],b[0]),(a[1],b[1]))
+        #width = 0
+        a1 = (a[0] - width * W[0,0], a[1] - width*W[0,1])
+        a2 = (a[0] + width * W[0, 0], a[1] + width * W[0, 1])
+        b1 = (b[0] - width * W[0, 0], b[1] - width * W[0, 1])
+        b2 = (b[0] + width * W[0, 0], b[1] + width * W[0, 1])
+        if border:
+            plt.plot((a1[0],b1[0]),(a1[1],b1[1]),color=color)
+            plt.plot((a2[0],b2[0]),(a2[1],b2[1]),color=color)
+            plt.plot((a1[0],a2[0]),(a1[1],a2[1]),color=color)
+            plt.plot((b1[0],b2[0]),(b1[1],b2[1]),color=color)
+        x = (a1[0],a2[0],b2[0],b1[0])
+        y = (a1[1],a2[1],b2[1],b1[1])
+        ax.fill( x, y, color=color,edgecolor=edgecolor )
+        #ax.fill( x, y, color=color)
+
+
+def plot_sphere_2d(ax, sphere, scatter, color=(1,0,0,0.2), border=False):
+    """
+    not really working; using the affine one for now
+    """
+    c,r = sphere
+    n   = len(c)
+    steps = 20
+    if border:
+        edgecolor = color
+    else:
+        edgecolor = (0,0,0,0)
+
+    wedge_radius = r + scatter
+    wedge_width  = 2*scatter
+    if r > scatter:
+        wedge = patches.Wedge(c,wedge_radius,0,360,width=wedge_width,edgecolor=edgecolor,color=color)
+    else:
+        wedge = patches.Wedge(c,wedge_radius,0,360,edgecolor=edgecolor,color=color)
+    ax.add_patch( wedge )
+
+
 def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
     from matplotlib.colors import LightSource
 
@@ -161,6 +216,31 @@ def plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, sc
     plt.title('detected models')
 
 
+def plot_uniscale_ransac_sphere(ax, all_points, models, scores, model_points, scale):
+    """
+    :return:
+    """
+    max_score = np.max(scores)
+    cmap = cm.get_cmap("jet")
+    for model,score,mpoints in zip(models,scores,model_points):
+        color = cmap(score/max_score)
+        color = (*color[:3],0.2)
+        plot_sphere_2d(ax, model, scale, color)
+        mpoints = np.array(mpoints)
+        plt.scatter(mpoints[:, 0], mpoints[:, 1], color="gray", s=4, alpha=0.5)
+        plt.scatter(mpoints[0, 0], mpoints[0, 1], alpha=1,s=0.01) # hack para que el colorbar no quede transparente
+    xmin = np.min([p[0] for p in all_points])-5
+    xmax = np.max([p[0] for p in all_points])+5
+    ymin = np.min([p[1] for p in all_points])-5
+    ymax = np.max([p[1] for p in all_points])+5
+    xlen = xmax-xmin
+    ylen = ymax-ymin
+    maxlen = max(xlen,ylen)
+    plt.xlim(xmin,xmin+maxlen)
+    plt.ylim(ymin,ymin+maxlen)
+    plt.title('detected models')
+
+
 def plot_multiscale_ransac_affine(ax, model_node, plot_leaves, plot_single_parents, plot_branches):
     """
     :return:
@@ -189,6 +269,37 @@ def plot_multiscale_ransac_affine(ax, model_node, plot_leaves, plot_single_paren
         # FIN TEMPORAL
         plot_multiscale_ransac_affine(ax, node, plot_leaves, plot_single_parents, plot_branches)
     return ax
+
+
+def plot_multiscale_ransac_sphere(ax, model_node, plot_leaves, plot_single_parents, plot_branches):
+    """
+    :return:
+    """
+    cmap = cm.get_cmap("jet")
+    _scale, _model, _score, _points, _children = model_node
+    #if True:
+    plot_it = False
+    if len(_children) == 0 and plot_leaves:
+        _color = (1,0,0,0.05)
+        plot_it = True
+    elif len(_children) == 1 and plot_single_parents:
+        _color = (0,1,0,0.05)
+        plot_it = True
+    elif plot_branches:
+        _color = (0,0,1,0.05)
+        plot_it = True
+    #print('plotting ',_scale,_score,len(_points),len(_children))
+    if plot_it:
+        plot_sphere_2d(ax, _model, _scale, _color)
+        plot_points(ax,_points, color="gray", size=4, alpha=0.5)
+        plot_points(ax,_points, alpha=1, size=0.01)  # hack para que el colorbar no quede transparente
+    for node in _children:
+        # TEMPORAL
+        #
+        # FIN TEMPORAL
+        plot_multiscale_ransac_sphere(ax, node, plot_leaves, plot_single_parents, plot_branches)
+    return ax
+
 
 def plot_points(ax,list_of_points,size=4,alpha=1,color='black'):
     mat = np.array(list_of_points)

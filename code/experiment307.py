@@ -47,7 +47,7 @@ if __name__ == "__main__":
     dataset = args["dataset"]
     rng = random.default_rng(seed)
     #
-    all_points, ground_truth = generate_dataset(dataset, npoints, scatter, rng)
+    all_points, ground_truth = some_rings(npoints, scatter, rng)
 
     bbox = bounding_box(all_points)
     bg_points = sim_background_points(args["nbpoints"],bbox,rng)
@@ -70,5 +70,5 @@ if __name__ == "__main__":
     model_points = [m[1] for m in models]
     models =[ m[0] for m in models]
     plot_uniscale_ransac_sphere(ax, all_points, models, scores, model_points, scale)
-    plt.savefig('uniscale_nfa.svg')
+    plt.savefig('sphere_uniscale_nfa_greedy.svg')
     plt.show()

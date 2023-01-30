@@ -55,7 +55,7 @@ if __name__ == "__main__":
     factor  = args["factor"]
     dataset = args["dataset"]
     rng = random.default_rng(seed)
-    all_points, ground_truth = generate_dataset(dataset, npoints, scatter, rng)
+    all_points, ground_truth = some_rings(npoints, scatter, rng)
 
     bbox = bounding_box(all_points)
     bg_points = sim_background_points(args["nbpoints"],bbox,rng)
@@ -76,17 +76,17 @@ if __name__ == "__main__":
                                       not args["no_plot_leaves"],
                                       not args["no_plot_single"],
                                       not args["no_plot_branches"])
-    xmin = 0.9*np.min([p[0] for p in all_points])
-    xmax = 1.1*np.max([p[0] for p in all_points])
-    ymin = 0.9*np.min([p[1] for p in all_points])
-    ymax = 1.1*np.max([p[1] for p in all_points])
+    xmin = 0.9*np.min([p[0] for p in all_points])-5
+    xmax = 1.1*np.max([p[0] for p in all_points])+5
+    ymin = 0.9*np.min([p[1] for p in all_points])-5
+    ymax = 1.1*np.max([p[1] for p in all_points])+5
     xlen = (xmax-xmin)
     ylen = (ymax-ymin)
     maxlen = max(xlen,ylen)
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.savefig('multiscale_nfa.svg')
+    plt.savefig('sphere_multiscale_nfa_greedy.svg')
     plt.show()
     plt.close()
 

@@ -241,7 +241,7 @@ def build_affine_set_relative_to(affine_set, dist=0, angle=0):
     respect to the first dimension (in the first dimension only, not generic rotation)
     or either parallel at a given distance (along the first direction of W)
     """
-    c, V, W = affine_set
+    c, V, W, P = affine_set
     m, n = V.shape
     n = len(c)
     if angle != 0:
@@ -262,7 +262,7 @@ def build_affine_set_relative_to(affine_set, dist=0, angle=0):
         c2 = c + dist * W[0, :]
     else:
         c2 = c
-    return (c2, V2, W2)
+    return (c2, V2, W2, V)
 
 
 def distance_to_affine(list_of_points, affine_set, P=None):
@@ -301,6 +301,28 @@ def ransac_affine(points, m, k, _rng):
         sampled_model = build_affine_set(list_of_points)
         models.append(sampled_model)
     return models
+
+
+def ransac_sphere(points, m, k, _rng):
+    """
+    Create a sphere from n+1 points in ambient dimension n sampled at random
+    :param points: input data points
+    :param m: dimension of affine space
+    :param k: number of samples to draw
+    :return: a list of candidate affine models
+    """
+    N = len(points)
+    models = list()
+    idx = range(N)
+    for i in range(k):
+        chosen_ones = _rng.choice(idx,size=m+1,replace=False)
+        list_of_points = [points[r] for r in chosen_ones ]
+        sampled_model = build_shpere(list_of_points)
+        models.append(sampled_model)
+    return models
+
+def ransac_patch(points, m, k, rng):
+    return ransac_affine(points, m, k, rng)
 
 
 def nfa_ks(points, model, model_dim, model_nparam, distance, scale, ntests=None, return_counts=False):
@@ -448,6 +470,125 @@ def ransac_nfa_affine_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0
         model_nodes = list()
         for m,p,s in detected_models:
             children = ransac_nfa_affine_multiscale_rafa(points,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,points,children) )
+        return model_nodes
+
+
+
+def ransac_nfa_sphere_uniscale_greedy(points,scale,nsamp,rng):
+    N = len(points)
+    m = 1
+    detected_models = list()
+    if not N:
+        return detected_models
+
+    candidates = ransac_sphere(points,m,nsamp,rng)
+    cand_points = tuple(points)
+
+    while len(cand_points):
+        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_sphere, scale, ntests=N**3) for cand in candidates]
+        best_idx = np.argmin(nfas)
+        best_nfa  = nfas[best_idx]
+        if best_nfa >= 1:
+            break
+        best_cand = candidates[best_idx]
+        best_points = find_aligned_points(cand_points,best_cand,distance_to_sphere,scale)
+        detected_models.append((best_cand,best_points,best_nfa))
+        #
+        # remove aligned points
+        #
+        cand_points = subtract_points(cand_points,best_points)
+    return detected_models
+
+
+def ransac_nfa_sphere_multiscale_greedy(points, scale, factor, nsamp, rng, depth=0):
+    detected_models = ransac_nfa_sphere_uniscale_greedy(points,scale,nsamp, rng)
+    nmodels = len(detected_models)
+    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'detected',nmodels)
+    if nmodels == 0:
+        return ()
+    else:
+        model_nodes = list()
+        for m,p,s in detected_models:
+            children = ransac_nfa_sphere_multiscale_greedy(points,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,points,children) )
+        return model_nodes
+
+
+def ransac_nfa_sphere_uniscale_rafa(points,scale,nsamp,rng):
+    N = len(points)
+    m = 1
+    candidates = ransac_sphere(points,m,nsamp,rng)
+    cand_models = list(candidates)
+    detected_models = list()
+    rem_points = list() # these are the excluding ALL significant models found so far
+    #
+    # The baseline (global ) NFAs are computed _once_
+    #
+    nfas = [nfa_ks(points, cand, m, m + 1, distance_to_sphere, scale, ntests=N ** 3) for cand in candidates]
+    #
+    # the candidates are sorted _once_ using their NFAs
+    # the most significant have lower NFA, so the ascending order is ok
+    #
+    idx = np.argsort(nfas)
+    nfas = [nfas[i] for i in idx]
+    cand_models = [cand_models[i] for i in idx]
+    cand_points = [find_aligned_points(points, c, distance_to_sphere, scale) for c in cand_models]
+    cand_models = list(zip(cand_models,nfas,cand_points))
+    # now we repeat
+    #
+    excluded_points = list()
+    while len(cand_models):
+        best_cand,best_nfa,best_points   = cand_models[0]
+        #print("NFA of best model",best_nfa)
+        if best_nfa >= 1:
+            break
+        detected_models.append((best_cand,best_points,best_nfa))
+        excluded_points.extend(best_points)
+        filtered_models = list()
+        for t in range(1,len(cand_models)):
+            other_model,other_nfa,other_points = cand_models[t]
+            #
+            # remove the best candidate points from this model
+            #
+            other_rem = subtract_points(other_points,excluded_points)
+            #print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
+            if len(other_rem) <= m+2:
+                #print(" not enough points")
+                continue
+            #
+            # see if it is still significant
+            #
+            rem_nfa = nfa_ks(other_rem, other_model, m, m + 1, distance_to_sphere, scale, ntests=N ** 2)
+            #print(f"orig NFA {other_nfa:16.4f} NFA of non-redundant points {rem_nfa:16.4f}",end=" ")
+            #
+            # if it is, it is the new top
+            #
+            if rem_nfa < 1:
+                #print("-> non-redundant")
+                filtered_models.append((other_model,other_nfa,other_points))
+            else:
+                pass
+                #print("-> redundant")
+            # if other_nfa >= 1, the top is incremented but the other model is _not_ added to the list
+        #
+        #
+        # we continue the analysis with the filtered models
+        #print("redundant ",len(cand_models)-len(filtered_models),"non-redundant ",len(filtered_models))
+        cand_models = filtered_models
+    return detected_models
+
+
+def ransac_nfa_sphere_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0):
+    detected_models = ransac_nfa_sphere_uniscale_rafa(points,scale,nsamp, rng)
+    nmodels = len(detected_models)
+    print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'detected',nmodels)
+    if nmodels == 0:
+        return ()
+    else:
+        model_nodes = list()
+        for m,p,s in detected_models:
+            children = ransac_nfa_sphere_multiscale_rafa(points,scale*factor,factor,nsamp, rng, depth=depth+1)
             model_nodes.append( (scale*factor,m,s,points,children) )
         return model_nodes
 

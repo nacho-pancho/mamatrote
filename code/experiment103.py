@@ -53,11 +53,8 @@ def parallel_vs_distance(m,n,
     """
     if scatter_dist is None:
         scatter_dist = build_scatter_distribution(n - m, rng)
-    if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
-
-    affine_set_1 = sim_affine_set(n,m,model_dist,rng)
+    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
+    affine_set_1 = sim_affine_model(m, bounding_box, rng)
     nscales = len(scales)
     ndist   = len(distances)
     nfas = np.zeros((ndist,nscales))
@@ -66,10 +63,10 @@ def parallel_vs_distance(m,n,
         nback  = npoints - nmodel
         affine_set_2 = build_affine_set_relative_to(affine_set_1, dist=dist, angle=0)
         for k in range(nsamp):
-            model1_points = sim_affine_cloud(affine_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
-            model2_points = sim_affine_cloud(affine_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
+            back_points  = sim_points(nback, bounding_box, rng)
+            model1_points = sim_affine_points(affine_set_1, nmodel, bounding_box, scatter, rng, scatter_dist)
+            model2_points = sim_affine_points(affine_set_2, nmodel, bounding_box, scatter, rng, scatter_dist)
             model_points = np.concatenate((model1_points,model2_points))
-            back_points  = bg_dist((nback, n))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
                 nfa = nfa_ks(_test_points, affine_set_1, m, m+1, distance_to_affine, s)

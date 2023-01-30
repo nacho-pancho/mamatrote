@@ -38,7 +38,6 @@ def model_vs_scale_and_scatter(m,n,
                                scales,
                                rng,
                                scatter_dist=None,
-                               bg_dist=None,
                                bg_scale=1,
                                npoints=100,
                                prop=0.5,
@@ -49,22 +48,19 @@ def model_vs_scale_and_scatter(m,n,
     """
     if scatter_dist is None:
         scatter_dist = build_scatter_distribution(n - m, rng)
-    if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
-
-    affine_set = sim_affine_set(n,m,model_dist,rng)
+    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
+    affine_set = sim_affine_model(m, bounding_box, rng)
     nfas = np.zeros((len(scatters),len(scales)))
     for i,scat in enumerate(scatters):
         nmodel = int(np.ceil(prop*npoints))
         nback  = npoints - nmodel
         for k in range(nsamp):
-            model_points = sim_affine_cloud(affine_set, nmodel, rng, scat, model_dist, scatter_dist)
-            back_points = bg_dist((nback, n))
+            model_points = sim_affine_points(affine_set, nmodel, bounding_box, scat, rng, scatter_dist)
+            back_points  = sim_points(nback, bounding_box, rng)
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
-                nfas[i,j] += nfa < 1# lognfa
+                nfas[i,j] += nfa < 1
     return nfas*(1/nsamp)
 
 #==========================================================================================

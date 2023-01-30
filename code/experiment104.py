@@ -47,16 +47,13 @@ def oblique_vs_angle(m, n,
     """
     if scatter_dist is None:
         scatter_dist = build_scatter_distribution(n - m, rng)
-    if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    model_dist = lambda x: rng.uniform(size=x,low=-bg_scale/2,high=bg_scale/2)
-
+    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
     # we rotate about the z axis, so we need an affine set that is orthogonal to the z axis
     c = np.zeros(n)
     I = np.eye(n)
     V = I[:m,:]
     W = I[m:,:]
-    affine_set_1 = (c,V,W)
+    affine_set_1 = (c,V,W,V)
     nscales = len(scales)
     nang   = len(angles)
     nfas = np.zeros((nang,nscales))
@@ -74,13 +71,13 @@ def oblique_vs_angle(m, n,
             else:
                 V2 = V
             W2 = W @ R
-            affine_set_2 = (c,V2,W2)
+            affine_set_2 = (c,V2,W2,V2)
         else:
             affine_set_2 = affine_set_1
         for k in range(nsamp):
-            model1_points = sim_affine_cloud(affine_set_1, nmodel, rng, scatter, model_dist, scatter_dist)
-            model2_points = sim_affine_cloud(affine_set_2, nmodel, rng, scatter, model_dist, scatter_dist)
-            back_points  = bg_dist((nback, n))
+            back_points  = sim_points(nback, bounding_box, rng)
+            model1_points = sim_affine_points(affine_set_1, nmodel, bounding_box, scatter, rng, scatter_dist)
+            model2_points = sim_affine_points(affine_set_2, nmodel, bounding_box, scatter, rng, scatter_dist)
             model_points = np.concatenate((model1_points,model2_points))
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
