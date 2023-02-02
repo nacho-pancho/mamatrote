@@ -35,7 +35,8 @@ def build_scatter_distribution(r, rng, theta=0):
     else:
         return lambda size: rng.power(r-theta,size=size)
 
-def bounding_box(points):
+
+def fit_bounding_box(points):
     if not len(points):
         return None
     if not len(points[0]):
@@ -44,6 +45,11 @@ def bounding_box(points):
     _min = tuple(np.min(tuple(p[i] for p in points)) for i in range(n))
     _max = tuple(np.max(tuple(p[i] for p in points)) for i in range(n))
     return tuple(zip(_min,_max))
+
+
+def bounding_box_diameter(bounding_box):
+    return np.linalg.norm( [ b[1] - b[0] for b in bounding_box] )
+
 
 def gram_schmidt(V):
     m,n = V.shape

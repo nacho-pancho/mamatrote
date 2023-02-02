@@ -66,7 +66,7 @@ def ransac_baseline_test(points,scale,nsamp,rng):
         color=cmap(nfa/max_nfa)
         if nfa > 0:
             color = (*color[:3],0.1)
-            plot_sphere_2d(ax, cand, scale, color)
+            plot_sphere_model_2d(ax, cand, scale, color)
             a_points = np.array(find_aligned_points(points,cand,distance_to_sphere,scale))
             plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
             det += 1

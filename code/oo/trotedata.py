@@ -152,14 +152,14 @@ def sim_sphere_model(bounding_box, rng):
     model =  SphereModel(ambient_dim)
     model.center = tuple(
             rng.uniform(low=bounding_box[i][0],high=bounding_box[i][1])
-            for i in range(m)
+            for i in range(ambient_dim)
         )
     # sample radius so that it is within the bounding box
     max_rad = np.min(
         np.array(
             [
-                min(np.abs(c[i] - bounding_box[i][0]), np.abs(c[i] - bounding_box[i][1]))
-                for i in range(m)
+                min(np.abs(model.center[i] - bounding_box[i][0]), np.abs(model.center[i] - bounding_box[i][1]))
+                for i in range(ambient_dim)
             ]
         )
     )

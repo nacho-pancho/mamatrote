@@ -46,9 +46,6 @@ def inside_bounding_box(points, bounding_box):
         y[i] = inside
     return y
 
-def bounding_box_diameter(bounding_box):
-    return np.linalg.norm( [ b[1] - b[0] for b in bounding_box] )
-
 def sim_background_points(npoints, bounding_box, rng):
     """
     simulate npoints points uniformly distributed within the specified bounding box
@@ -125,7 +122,7 @@ def sim_patch_points(_num_points, _patch, _scatter, _rng):
     We sample values uniformly from a bounding box and keep those inside
     """
     c,V,W,P = _patch
-    bbox0  = bounding_box(P)
+    bbox0  = fit_bounding_box(P)
     bbox = [(r[0]-_scatter,r[1]+_scatter) for r in bbox0 ]
     n = len(c)
     m = len(V)
@@ -209,9 +206,9 @@ def azucarlito(npoints,scatter,rng):
     ground_truth = list()
     npermodel = npoints // (k+1)
     all_points = list()
+    bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_distro = lambda x: rng.uniform(size=x, low=-10, high=10)
-        model_points = sim_affine_points(model, npermodel, rng, scatter=scatter, model_distro=model_distro)
+        model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
         ground_truth.append( (model,model_points) )
         all_points.extend(model_points)
     return all_points,ground_truth
@@ -232,12 +229,13 @@ def waffle(npoints, scatter, rng, size = 10, nlines=4):
     npermodel = npoints//nmodels
     ground_truth = list()
     all_points   = list()
+    bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_distro = lambda x: rng.uniform(size=x, low=0, high=10)
-        model_points = sim_affine_points(model, npermodel, rng, scatter=scatter, model_distro=model_distro)
+        model_points = sim_affine_points(model, npermodel, bounding_box, rng, scatter=scatter)
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth
+
 
 def satan(npoints, scatter, rng, size = 5, vert = 5, step=2):
     models = list()
@@ -254,12 +252,13 @@ def satan(npoints, scatter, rng, size = 5, vert = 5, step=2):
     npermodel = npoints//nmodels
     ground_truth = list()
     all_points   = list()
+    bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_distro = lambda x: rng.uniform(size=x, low=0, high=10)
-        model_points = sim_affine_points(model, npermodel, rng, scatter=scatter, model_distro=model_distro)
+        model_points = sim_affine_points(model, npermodel, bounding_box, rng, scatter=scatter)
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth
+
 
 def some_rings(npoints,scatter,rng):
     models = list()
@@ -283,6 +282,7 @@ def some_rings(npoints,scatter,rng):
     all_points.extend(model_points)
 
     return all_points, ground_truth
+
 
 def carucha(npoints,rng):
     models = list()
@@ -322,6 +322,7 @@ def carucha(npoints,rng):
 
     return all_points, ground_truth
 
+
 def collar(npoints, scatter, rng, big_radius = 5, small_radius = 1, rings = 7):
     models = list()
     angle = 2.0*np.pi/rings
@@ -337,6 +338,7 @@ def collar(npoints, scatter, rng, big_radius = 5, small_radius = 1, rings = 7):
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth
+
 
 def clusters_and_lines(npoints, scatter, rng):
     models = list()

@@ -48,7 +48,7 @@ if __name__ == "__main__":
     #
     all_points, ground_truth = some_rings(npoints, scatter, rng)
 
-    bbox = bounding_box(all_points)
+    bbox = fit_bounding_box(all_points)
     bg_points = sim_background_points(args["nbpoints"],bbox,rng)
     all_points.extend(bg_points)
     ground_truth.append(("background",bg_points))
