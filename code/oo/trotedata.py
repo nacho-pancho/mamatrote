@@ -164,9 +164,10 @@ def sim_sphere_model(bounding_box, rng):
         )
     )
     model.radius = rng.uniform(low=0, high=max_rad)
+    return model
 
 
-def sim_sphere_points(_num_points, _sphere, _scatter, _rng):
+def sim_sphere_points(_sphere, _num_points, _scatter, _rng):
     """
     simulate a cloud of points whose distribution is uniform within the region defined
     by all points whose distance to the patch is less than a scatter value.

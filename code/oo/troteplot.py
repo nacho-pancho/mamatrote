@@ -180,13 +180,12 @@ def plot_uniscale_ransac(ax, all_points, models, scores, model_points, scale, bo
     plt.title('detected models')
 
 
-def plot_multiscale_ransac(ax, model_node, plot_leaves, plot_single_parents, plot_branches):
+def plot_multiscale_ransac(ax, model_node, plot_leaves, plot_single_parents, plot_branches, bounding_box):
     """
     :return:
     """
     cmap = cm.get_cmap("jet")
     _scale, _model, _score, _points, _children = model_node
-    #if True:
     plot_it = False
     if len(_children) == 0 and plot_leaves:
         _color = (1,0,0,0.05)
@@ -197,16 +196,15 @@ def plot_multiscale_ransac(ax, model_node, plot_leaves, plot_single_parents, plo
     elif plot_branches:
         _color = (0,0,1,0.05)
         plot_it = True
-    #print('plotting ',_scale,_score,len(_points),len(_children))
     if plot_it:
-        plot_model(ax, _model, 50, _scale, _color)
+        plot_model(ax, _model, _scale, bounding_box, _color)
         plot_points(ax,_points, color="gray", size=4, alpha=0.5)
         plot_points(ax,_points, alpha=1, size=0.01)  # hack para que el colorbar no quede transparente
     for node in _children:
         # TEMPORAL
         #
         # FIN TEMPORAL
-        plot_multiscale_ransac(ax, node, plot_leaves, plot_single_parents, plot_branches)
+        plot_multiscale_ransac(ax, node, plot_leaves, plot_single_parents, plot_branches, bounding_box)
     return ax
 
 

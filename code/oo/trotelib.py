@@ -487,8 +487,8 @@ def ransac_nfa_multiscale_greedy(model_prototype:TroteModel, points, scale, fact
     else:
         model_nodes = list()
         for m,p,s in detected_models:
-            children = ransac_nfa_multiscale_greedy(model_prototype, points,scale*factor,factor,nsamp, rng, depth=depth+1)
-            model_nodes.append( (scale*factor,m,s,points,children) )
+            children = ransac_nfa_multiscale_greedy(model_prototype, p,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,p,children) )
         return model_nodes
 
 
@@ -510,7 +510,7 @@ def ransac_nfa_uniscale_rafa(model_prototype:TroteModel, points, scale, nsamp, r
     idx = np.argsort(nfas)
     nfas = [nfas[i] for i in idx]
     cand_models = [cand_models[i] for i in idx]
-    cand_points = [find_aligned_points(c, points, scale) for c in cand_models]
+    cand_points = [c.find_aligned(points, scale) for c in cand_models]
     cand_models = list(zip(cand_models,nfas,cand_points))
     # now we repeat
     #
