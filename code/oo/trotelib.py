@@ -280,6 +280,14 @@ class SphereModel(TroteModel):
         """
         return self
 
+    def copy(self):
+        _copy = SphereModel(self.ambient_dim)
+        _copy.center = self.center
+        _copy.radius = self.radius
+        _copy.points = self.points[:]
+        return _copy
+
+
 
 class PatchModel(AffineModel):
     def __init__(self,ambient_dim, model_dim):

@@ -31,10 +31,10 @@ def ransac_baseline_test(points,scale,nsamp,rng):
     N   = len(points)
     m = 1
     n = 2
-    prototype_model = AffineModel(n,m)
+    prototype_model = SphereModel(n)
     candidates = prototype_model.ransac(points,nsamp,rng)
-    print("FUUU")
-    print(candidates)
+    for c in candidates:
+        print(c.center, c.radius)
     cmap = cm.get_cmap("viridis")
     nfas= list()
     counts = list()
@@ -69,7 +69,7 @@ def ransac_baseline_test(points,scale,nsamp,rng):
         color=cmap(nfa/max_nfa)
         if nfa > 0:
             color = (*color[:3],0.2)
-            plot_affine_model_2d(ax, cand, scale, bounding_box, color)
+            plot_model(ax, cand, scale, bounding_box, color)
             a_points = np.array(cand.find_aligned(points,scale))
             plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
             det += 1
@@ -84,7 +84,7 @@ import argparse
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--nsamples", type=int, default=200,
+    ap.add_argument("--nsamples", type=int, default=100,
                     help="number of RANSAC samples to draw")
     ap.add_argument("--npoints", type=int, default=1000,
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     scale = args["scale"]
     seed = args["seed"]
     rng = random.default_rng(seed)
-    all_points, ground_truth = azucarlito(npoints, scatter,rng)
+    all_points, ground_truth = some_rings(npoints, 0.1, rng)
     nfas = ransac_baseline_test(all_points, scale, nransac, rng)
 
     fbase = (f'baseline RANSAC test for a fixed pattern of 4 lines o a plane').lower().replace(' ', '_').replace('=',

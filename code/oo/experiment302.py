@@ -33,12 +33,10 @@ from  trotelib import *
 from troteplot import *
 
 
-def model_vs_scale_and_scatter(m,n,
+def model_vs_scale_and_scatter(n,
                                scatters,
                                scales,
                                rng,
-                               scatter_dist=None,
-                               bg_scale=1,
                                npoints=100,
                                prop=0.5,
                                nsamp=10):
@@ -46,16 +44,14 @@ def model_vs_scale_and_scatter(m,n,
     see wheter we detect the structure or not depending on how spread the points are from the target structure
     :return:
     """
-    if scatter_dist is None:
-        scatter_dist = build_scatter_distribution(n - m, rng)
-    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
-    model = sim_sphere_model(m, bounding_box, rng)
+    bounding_box = tuple((-10,10) for i in range(n))
+    model = sim_sphere_model(bounding_box, rng)
     nfas = np.zeros((len(scatters),len(scales)))
     for i,scat in enumerate(scatters):
         nmodel = int(np.ceil(prop*npoints))
         nback  = npoints - nmodel
         for k in range(nsamp):
-            model_points = sim_sphere_points(model, nmodel, bounding_box, scat, rng, scatter_dist)
+            model_points = sim_sphere_points(model, nmodel, scat, rng)
             back_points  = sim_points(nback, bounding_box, rng)
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
@@ -97,7 +93,7 @@ if __name__ == "__main__":
             print(f"n={n} m={m}")
             fbase  = (f'sphere NFA vs scale and scatter n={n} m={m} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt') or args["recompute"]:
-                nfas = model_vs_scale_and_scatter(m, n, scatters, scales, rng,nsamp=nsamp,npoints=npoints)
+                nfas = model_vs_scale_and_scatter(n, scatters, scales, rng,nsamp=nsamp,npoints=npoints)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
                 np.savetxt(fbase + '_y.txt', scatters)

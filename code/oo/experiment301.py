@@ -46,7 +46,6 @@ def model_vs_scale_and_npoints(n,
     """
     bounding_box = tuple((-10,10) for i in range(n))
     model = sim_sphere_model(bounding_box, rng)
-    print(model.center,model.radius)
     nscales = len(scales)
     nnp   = len(npointses)
     nfas = np.zeros((nnp,nscales))

@@ -264,21 +264,21 @@ def some_rings(npoints,scatter,rng):
     model = SphereModel(2)
     model.center = (2,6)
     model.radius = 1.5
-    model_points = sim_sphere_points(npermodel, model, scatter, rng)
+    model_points = sim_sphere_points(model, npermodel, scatter, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
     # pupila
     model = SphereModel(2)
     model.center = (2,6)
     model.radius = 0.5
-    model_points = sim_sphere_points(npermodel, model, scatter, rng)
+    model_points = sim_sphere_points(model, npermodel, scatter, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
     # otro ojo
     model = SphereModel(2)
     model.center = (6,6)
     model.radius = 2
-    model_points = sim_sphere_points(npermodel, model, scatter, rng)
+    model_points = sim_sphere_points(model, npermodel, scatter, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
 
@@ -293,42 +293,42 @@ def carucha(npoints,rng):
     model = SphereModel(2)
     model.center = (5,5)
     model.radius = 5
-    model_points = sim_sphere_points(npermodel, model, 0.2, rng)
+    model_points = sim_sphere_points(model, npermodel, 0.2, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
     # nariz
     model = SphereModel(2)
     model.center = (5,4)
     model.radius = 1
-    model_points = sim_sphere_points(npermodel, model, 0.2, rng)
+    model_points = sim_sphere_points(model, npermodel, 0.2, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
     # ojo
     model = SphereModel(2)
     model.center = (3,6)
     model.radius = 2.2
-    model_points = sim_sphere_points(npermodel, model, 0.1, rng)
+    model_points = sim_sphere_points(model, npermodel, 0.1, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
     # pupila
     model = SphereModel(2)
     model.center = (3.2,6)
     model.radius = 0.6
-    model_points = sim_sphere_points(npermodel, model, 0.2, rng)
+    model_points = sim_sphere_points(model, npermodel, 0.2, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
     # otro ojo
     model = SphereModel(2)
     model.center = (7,6)
     model.radius = 2
-    model_points = sim_sphere_points(npermodel, model, 0.1, rng)
+    model_points = sim_sphere_points(model, npermodel, 0.1, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
     # pupila
     model = SphereModel(2)
     model.center = (7,6)
     model.radius = 0.7
-    model_points = sim_sphere_points(npermodel, model, 0.2, rng)
+    model_points = sim_sphere_points(model, npermodel, 0.2, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
 

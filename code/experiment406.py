@@ -23,33 +23,35 @@ from  trotelib import *
 from troteplot import *
 import matplotlib.cm as cm
 
-def ransac_baseline_test(points,scale,nsamp,rng):
+def ransac_clusters_and_lines(points,scale,nsamp,rng):
     """
     :return:
     """
     fig = plt.figure(figsize=(14,6))
     N   = len(points)
-    ambient_dim = 2
-    model_dim = 1
-    nparams = ambient_dim + 1
-    candidates = ransac_sphere(points,ambient_dim,nsamp,rng)
-    print("FUUU")
-    print(candidates)
-    cmap = cm.get_cmap("viridis")
+    candidates = list()
+    # lines
+    m = 1
+    line_candidates = ransac_affine(points,m,nsamp,rng)
+    #clusters
+    m = 0
+    cluster_candidates = ransac_affine(points,m,nsamp,rng)
+
+    candidates.extend(line_candidates)
+    candidates.extend(cluster_candidates)
+    cmap = cm.get_cmap("viridis")#LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
     nfas= list()
     counts = list()
     for cand in candidates:
-        nfa, count = nfa_ks(points, cand, model_dim, nparams, distance_to_sphere, scale, return_counts=True)
+        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, return_counts=True)
         nfas.append(-np.log10(nfa))
         counts.append(count)
     #
     # for debug:
     #
-    idx = np.argsort(counts)
-    nfas_sorted = np.array(nfas)[idx]
-    counts_sorted = np.array(counts)[idx]
-    for nfa,cnt in zip(nfas_sorted,counts_sorted):
-        print('npoints',cnt,'nfa',nfa)
+    idx = np.argsort(nfas)
+    for i in idx:
+        print('model order',len(candidates[i][1]), 'npoints',counts[i],'nfa',nfas[i])
     #
     # plot stuff
     #
@@ -68,8 +70,10 @@ def ransac_baseline_test(points,scale,nsamp,rng):
         color=cmap(nfa/max_nfa)
         if nfa > 0:
             color = (*color[:3],0.1)
-            plot_sphere_model_2d(ax, cand, scale, color)
-            a_points = np.array(find_aligned_points(points,cand,distance_to_sphere,scale))
+            length = 10
+            width  = scale
+            plot_affine_model_2d(ax, cand, length, width, color)
+            a_points = np.array(find_aligned_points(points,cand,distance_to_affine,scale))
             plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
             det += 1
     print('det',det,'not det',len(candidates)-det)
@@ -92,9 +96,9 @@ import argparse
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--nsamples", type=int, default=1000,
+    ap.add_argument("--nsamples", type=int, default=200,
                     help="number of RANSAC samples to draw")
-    ap.add_argument("--npoints", type=int, default=1000,
+    ap.add_argument("--npoints", type=int, default=200,
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
     ap.add_argument("--scatter", type=float, default=0.2,
                     help="How far are the model points scattered from the ground truth element.")
@@ -110,8 +114,8 @@ if __name__ == "__main__":
     scale = args["scale"]
     seed = args["seed"]
     rng = random.default_rng(seed)
-    all_points, ground_truth = some_rings(npoints, 0.1, rng)
-    nfas = ransac_baseline_test(all_points, scale, nransac, rng)
+    all_points, ground_truth = clusters_and_lines(npoints, 0.1, rng)
+    nfas = ransac_clusters_and_lines(all_points, scale, nransac, rng)
 
     fbase = (f'baseline RANSAC test for a fixed pattern of 4 lines o a plane').lower().replace(' ', '_').replace('=',
                                                                                                                  '_')

@@ -351,14 +351,14 @@ def clusters_and_lines(npoints, scatter, rng):
     c = [(2,5)]
     model = build_affine_set(c)
     models.append(model)
-    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    model_points = sim_affine_points(model, npermodel, bounding_box, 4*scatter, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
 
     c = [(8,5)]
     model = build_affine_set(c)
     models.append(model)
-    model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+    model_points = sim_affine_points(model, npermodel, bounding_box, 3*scatter, rng)
     ground_truth.append((model, model_points))
     all_points.extend(model_points)
 
