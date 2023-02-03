@@ -29,15 +29,17 @@ def ransac_baseline_test(points,scale,nsamp,rng):
     """
     fig = plt.figure(figsize=(14,6))
     N   = len(points)
-    m = 1
+    ambient_dim = 2
+    model_dim = 1
+    nparams = ambient_dim + 1
     candidates = ransac_sphere(points,m,nsamp,rng)
     print("FUUU")
     print(candidates)
-    cmap = cm.get_cmap("viridis")#LinearSegmentedColormap.from_list("cococho",([1,0,0,1],[.5,.5,.5,.25]))
+    cmap = cm.get_cmap("viridis")
     nfas= list()
     counts = list()
     for cand in candidates:
-        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_sphere, scale, ntests=N**2, return_counts=True)
+        nfa, count = nfa_ks(points, cand, model_dim, nparams, distance_to_sphere, scale, return_counts=True)
         nfas.append(-np.log10(nfa))
         counts.append(count)
     #

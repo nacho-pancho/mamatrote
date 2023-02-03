@@ -250,7 +250,9 @@ class AffineModel(TroteModel):
 class SphereModel(TroteModel):
 
     def __init__(self,ambient_dim):
-        super().__init__(ambient_dim, ambient_dim + 1)
+        self.ambient_dim = ambient_dim
+        self.num_model_points = ambient_dim + 1
+        self.model_dim = ambient_dim - 1
         self.center = []
         self.radius = []
         self.points = []

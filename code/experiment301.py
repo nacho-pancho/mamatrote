@@ -33,26 +33,18 @@ from  trotelib import *
 from troteplot import *
 import matplotlib.cm as cm
 
-def model_vs_scale_and_npoints(m,n,
+def model_vs_scale_and_npoints(n,
                          npointses,
                          scales,
                          rng,
                          prop=0.5,
-                         scatter_dist=None,
-                         bg_dist=None,
-                         bg_scale=1,
                          scatter=0.1,
                          nsamp=10):
     """
     see wheter we detect the structure or not depending on the number of points in it
     :return:
     """
-    if scatter_dist is None:
-        scatter_dist = build_scatter_distribution(n - m,rng)
-    if bg_dist is None:
-        bg_dist = lambda x: rng.uniform(size=x,low=-bg_scale,high=bg_scale)
-    bounding_box = tuple((-bg_scale/2, bg_scale/2) for i in range(n))
-
+    bounding_box = tuple((-10,10) for i in range(n))
     sphere_set_1 = sim_sphere_model(bounding_box, rng)
     nscales = len(scales)
     nnp   = len(npointses)
@@ -62,10 +54,10 @@ def model_vs_scale_and_npoints(m,n,
         nback  = npoints - nmodel
         for k in range(nsamp):
             model_points = sim_ring_points(nmodel, sphere_set_1, scatter, rng)
-            back_points  = bg_dist((nback, n))
+            back_points  = sim_background_points(npoints,bounding_box, rng)
             _test_points = np.concatenate((model_points,back_points))
             for j,s in enumerate(scales):
-                nfa = nfa_ks(_test_points, sphere_set_1, m, m+1, distance_to_sphere, s)
+                nfa = nfa_ks(_test_points, sphere_set_1, n-1, n+1, distance_to_sphere, s)
                 nfas[i,j] += nfa < 1
     return  nfas/nsamp
 
@@ -98,19 +90,17 @@ if __name__ == "__main__":
     Ns = np.round(np.linspace(max(10, npoints / 10), npoints, detail)).astype(int)
     scales = np.linspace(0.01, 0.4, detail)  # np.logspace(-10,-2,base=2,num=40)
     for n in (2, 3):
-        for m in range(n):
-            print(f"n={n} m={m}")
-            fbase = (f'sphere NFA vs scale and npoints n={n} m={m} s={scatter} N={npoints}').lower().replace(' ',
-                                                                                                      '_').replace(
-                '=', '_')
-            print("will perform", len(Ns), "x", len(scales), "tests")
-            if not os.path.exists(fbase + '_z.txt') or args["recompute"]:
-                nfas = model_vs_scale_and_npoints(m, n, Ns, scales, rng, nsamp=nsamp, scatter=scatter)
-                np.savetxt(fbase + '_z.txt', nfas)
-                np.savetxt(fbase + '_x.txt', scales)
-                np.savetxt(fbase + '_y.txt', Ns)
-            else:
-                nfas = np.loadtxt(fbase + '_z.txt')
-            ax = plot_scores_img(Ns, 'number of points',
-                                 scales, 'analysis scale', nfas,
-                                 fbase)
+        fbase = (f'sphere NFA vs scale and npoints n={n} s={scatter} N={npoints}').lower().replace(' ',
+                                                                                                  '_').replace(
+            '=', '_')
+        print("will perform", len(Ns), "x", len(scales), "tests")
+        if not os.path.exists(fbase + '_z.txt') or args["recompute"]:
+            nfas = model_vs_scale_and_npoints(n, Ns, scales, rng, nsamp=nsamp, scatter=scatter)
+            np.savetxt(fbase + '_z.txt', nfas)
+            np.savetxt(fbase + '_x.txt', scales)
+            np.savetxt(fbase + '_y.txt', Ns)
+        else:
+            nfas = np.loadtxt(fbase + '_z.txt')
+        ax = plot_scores_img(Ns, 'number of points',
+                             scales, 'analysis scale', nfas,
+                             fbase)
