@@ -475,8 +475,8 @@ def ransac_nfa_affine_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0
     else:
         model_nodes = list()
         for m,p,s in detected_models:
-            children = ransac_nfa_affine_multiscale_rafa(points,scale*factor,factor,nsamp, rng, depth=depth+1)
-            model_nodes.append( (scale*factor,m,s,points,children) )
+            children = ransac_nfa_affine_multiscale_rafa(p,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,p,children) )
         return model_nodes
 
 
@@ -516,8 +516,8 @@ def ransac_nfa_sphere_multiscale_greedy(points, scale, factor, nsamp, rng, depth
     else:
         model_nodes = list()
         for m,p,s in detected_models:
-            children = ransac_nfa_sphere_multiscale_greedy(points,scale*factor,factor,nsamp, rng, depth=depth+1)
-            model_nodes.append( (scale*factor,m,s,points,children) )
+            children = ransac_nfa_sphere_multiscale_greedy(p,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,p,children) )
         return model_nodes
 
 
