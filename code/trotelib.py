@@ -373,7 +373,7 @@ def ransac_nfa_affine_uniscale_greedy(points,scale,nsamp,rng):
     cand_points = tuple(points)
 
     while len(cand_points):
-        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale, ntests=N**3) for cand in candidates]
+        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale) for cand in candidates]
         best_idx = np.argmin(nfas)
         best_nfa  = nfas[best_idx]
         if best_nfa >= 1:
@@ -412,7 +412,7 @@ def ransac_nfa_affine_uniscale_rafa(points,scale,nsamp,rng):
     #
     # The baseline (global ) NFAs are computed _once_
     #
-    nfas = [nfa_ks(points, cand, m, m + 1, distance_to_affine, scale, ntests=N ** 3) for cand in candidates]
+    nfas = [nfa_ks(points, cand, 1, 3, distance_to_affine, scale) for cand in candidates]
     #
     # the candidates are sorted _once_ using their NFAs
     # the most significant have lower NFA, so the ascending order is ok
@@ -440,7 +440,7 @@ def ransac_nfa_affine_uniscale_rafa(points,scale,nsamp,rng):
             #
             other_rem = subtract_points(other_points,excluded_points)
             #print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
-            if len(other_rem) <= m+2:
+            if len(other_rem) <= 5:
                 #print(" not enough points")
                 continue
             #
@@ -483,16 +483,17 @@ def ransac_nfa_affine_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0
 
 def ransac_nfa_sphere_uniscale_greedy(points,scale,nsamp,rng):
     N = len(points)
-    m = 1
+    model_dim = 1
+    model_params = 3
     detected_models = list()
     if not N:
         return detected_models
 
-    candidates = ransac_sphere(points,m,nsamp,rng)
+    candidates = ransac_sphere(points,model_dim,nsamp,rng)
     cand_points = tuple(points)
 
     while len(cand_points):
-        nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_sphere, scale, ntests=N**3) for cand in candidates]
+        nfas = [nfa_ks(cand_points, cand, model_dim, model_params, distance_to_sphere, scale) for cand in candidates]
         best_idx = np.argmin(nfas)
         best_nfa  = nfas[best_idx]
         if best_nfa >= 1:
@@ -511,7 +512,7 @@ def ransac_nfa_sphere_multiscale_greedy(points, scale, factor, nsamp, rng, depth
     detected_models = ransac_nfa_sphere_uniscale_greedy(points,scale,nsamp, rng)
     nmodels = len(detected_models)
     print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'detected',nmodels)
-    if nmodels == 0:
+    if scale < 1e-2 or nmodels == 0:
         return ()
     else:
         model_nodes = list()
@@ -531,7 +532,7 @@ def ransac_nfa_sphere_uniscale_rafa(points,scale,nsamp,rng):
     #
     # The baseline (global ) NFAs are computed _once_
     #
-    nfas = [nfa_ks(points, cand, m, m + 1, distance_to_sphere, scale, ntests=N ** 3) for cand in candidates]
+    nfas = [nfa_ks(points, cand, 1, 3, distance_to_sphere, scale) for cand in candidates]
     #
     # the candidates are sorted _once_ using their NFAs
     # the most significant have lower NFA, so the ascending order is ok
@@ -559,13 +560,13 @@ def ransac_nfa_sphere_uniscale_rafa(points,scale,nsamp,rng):
             #
             other_rem = subtract_points(other_points,excluded_points)
             #print(f"{t:5} other points {len(other_points):6} other non-redundant points {len(other_rem):6}",end=" ")
-            if len(other_rem) <= m+2:
+            if len(other_rem) <= 5:
                 #print(" not enough points")
                 continue
             #
             # see if it is still significant
             #
-            rem_nfa = nfa_ks(other_rem, other_model, m, m + 1, distance_to_sphere, scale, ntests=N ** 2)
+            rem_nfa = nfa_ks(other_rem, other_model, 1, 3, distance_to_sphere, scale)
             #print(f"orig NFA {other_nfa:16.4f} NFA of non-redundant points {rem_nfa:16.4f}",end=" ")
             #
             # if it is, it is the new top
@@ -589,13 +590,13 @@ def ransac_nfa_sphere_multiscale_rafa(points, scale, factor, nsamp, rng, depth=0
     detected_models = ransac_nfa_sphere_uniscale_rafa(points,scale,nsamp, rng)
     nmodels = len(detected_models)
     print(' '*depth,'depth',depth,'scale',scale,'points',len(points),'detected',nmodels)
-    if nmodels == 0:
+    if scale < 1e-2 or nmodels == 0:
         return ()
     else:
         model_nodes = list()
         for m,p,s in detected_models:
-            children = ransac_nfa_sphere_multiscale_rafa(points,scale*factor,factor,nsamp, rng, depth=depth+1)
-            model_nodes.append( (scale*factor,m,s,points,children) )
+            children = ransac_nfa_sphere_multiscale_rafa(p,scale*factor,factor,nsamp, rng, depth=depth+1)
+            model_nodes.append( (scale*factor,m,s,p,children) )
         return model_nodes
 
 

@@ -15,6 +15,18 @@ from scipy import stats
 from scipy import special
 from trotelib import *
 
+def image_to_points_2d(img):
+    """convert a binary image into a bunch of points on a 2D grid"""
+    x,y = np.nonzero(img)
+    return list(zip(x,y))
+
+def image_to_points_3d(img):
+    x,y,z = np.nonzero(img)
+    N = len(x)
+    points = list()
+    for i in range(N):
+        points.append((x[i],y[i],z[i]))
+    return points
 
 def sim_points(npoints, bounding_box, _rng):
     """
