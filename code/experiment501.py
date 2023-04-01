@@ -36,7 +36,7 @@ if __name__ == "__main__":
                     help="text file where input files are specified; each entry should be of the form roll/image.tif")
     ap.add_argument("--scatter", type=float, default=0.2,
                     help="How far are the model points scattered from the ground truth element.")
-    ap.add_argument("--scale", type=float, default=0.4,
+    ap.add_argument("--scale", type=float, default=10,
                     help="Analysis scale.")
     ap.add_argument("--factor", type=float, default=0.5,
                     help="reduce scale at each level.")
@@ -68,15 +68,16 @@ if __name__ == "__main__":
     plot_points(ax,all_points)
     plt.show()
 
-    nodes = ransac_nfa_sphere_multiscale_greedy(all_points,scale=diam,factor=factor,nsamp=nransac,rng=rng)
-
+    models = ransac_nfa_sphere_uniscale_greedy(all_points,scale=scale,nsamp=nransac,rng=rng)
+    scores = [-np.log10(m[2]) for m in models]
+    model_points = [m[1] for m in models]
+    models =[ m[0] for m in models]
+    print(scores)
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot()
-    for node in nodes:
-        plot_multiscale_ransac_sphere(ax, node,
-                                      not args["no_plot_leaves"],
-                                      not args["no_plot_single"],
-                                      not args["no_plot_branches"])
+
+    plot_uniscale_ransac_sphere(ax,all_points, models, scores, model_points, scale)
+
     xmin = 0.9*np.min([p[0] for p in all_points])-5
     xmax = 1.1*np.max([p[0] for p in all_points])+5
     ymin = 0.9*np.min([p[1] for p in all_points])-5

@@ -57,7 +57,6 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot()
     plot_points(ax,all_points)
-    plt.show()
 
     models = ransac_nfa_affine_uniscale_greedy(all_points,scale,nransac,rng)
     scores = [-np.log10(m[2]) for m in models]
@@ -70,5 +69,6 @@ if __name__ == "__main__":
     model_points = [m[1] for m in models]
     models =[ m[0] for m in models]
     plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale)
+    plt.savefig('uniscale_nfa_affine_greedy.png')
     plt.savefig('uniscale_nfa_affine_greedy.svg')
-    plt.show()
+    plt.savefig('uniscale_nfa_affine_greedy.pdf')

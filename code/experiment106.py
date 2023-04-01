@@ -83,8 +83,8 @@ def ransac_baseline_test(points,scale,nsamp,rng):
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.show()
-
+    plt.savefig('experiment106.svg')
+    plt.close()
 
 import argparse
 

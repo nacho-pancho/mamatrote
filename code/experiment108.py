@@ -67,7 +67,6 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot()
     plot_points(ax,all_points)
-    plt.show()
     nodes = ransac_nfa_affine_multiscale_greedy(all_points,scale=20,factor=factor,nsamp=nransac,rng=rng)
 
     fig = plt.figure(figsize=(6,6))
@@ -87,8 +86,9 @@ if __name__ == "__main__":
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
+    plt.savefig('multiscale_nfa_affine_greedy.png')
     plt.savefig('multiscale_nfa_affine_greedy.svg')
-    plt.show()
+    plt.savefig('multiscale_nfa_affine_greedy.pdf')
     plt.close()
 
 

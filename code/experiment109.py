@@ -56,8 +56,6 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot()
     plot_points(ax,all_points)
-    plt.show()
-
     detected_models = ransac_nfa_affine_uniscale_rafa(all_points,scale,nransac,rng)
     if not len(detected_models):
         print("NOTHING DETECTED!")
@@ -73,4 +71,5 @@ if __name__ == "__main__":
     ax = plt.subplot(1,2,2)
     plot_uniscale_ransac_affine(ax, all_points, params, scores, points, scale)
     plt.savefig('uniscale_nfa_affine_rafa.svg')
-    plt.show()
+    plt.savefig('uniscale_nfa_affine_rafa.png')
+    plt.savefig('uniscale_nfa_affine_rafa.pdf')

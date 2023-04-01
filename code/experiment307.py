@@ -61,14 +61,14 @@ if __name__ == "__main__":
 
     models = ransac_nfa_sphere_uniscale_greedy(all_points,scale,nransac,rng)
     scores = [-np.log10(m[2]) for m in models]
+    model_points = [m[1] for m in models]
+    models =[ m[0] for m in models]
 
     fig = plt.figure(figsize=(14,6))
     ax = plt.subplot(1,2,1)
     plot_points(ax,all_points,alpha=1,size=2)
 
     ax = plt.subplot(1,2,2)
-    model_points = [m[1] for m in models]
-    models =[ m[0] for m in models]
     plot_uniscale_ransac_sphere(ax, all_points, models, scores, model_points, scale)
     plt.savefig('sphere_uniscale_nfa_greedy.svg')
     plt.show()
