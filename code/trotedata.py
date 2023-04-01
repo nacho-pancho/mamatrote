@@ -243,7 +243,7 @@ def waffle(npoints, scatter, rng, size = 10, nlines=4):
     all_points   = list()
     bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_points = sim_affine_points(model, npermodel, bounding_box, rng, scatter=scatter)
+        model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth

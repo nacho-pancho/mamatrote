@@ -361,6 +361,141 @@ def nfa_ks(points, model, model_dim, model_nparam, distance, scale, ntests=None,
     else:
         return ntests * pvalue
 
+def significance(point_distances, ambient_dim, model_dim, model_nparam, ntests=None):
+    if ntests is None:
+        ntests = special.binom(len(point_distances), model_nparam)
+
+    res_dim = ambient_dim - model_dim  # infer orthogonal space dimension
+    num_close_points = len(point_distances)
+    if num_close_points <= model_nparam + 1:  # hay problemas con KStest con muy pocos puntos!
+       return 10 # a number clearly larger than 1
+    else:
+        _, pvalue = stats.kstest(point_distances, stats.powerlaw(res_dim).cdf, alternative='greater')
+        return ntests * pvalue
+
+
+def detect(points,candidate_models,model_dim,model_nparam, model_distance_fun,scale):
+    detected_models = list()
+    ambient_dim = len(points[0])
+    for model_params in candidate_models:
+        distances = model_distance_fun(points,model_params)
+        d_and_p = list((p,d/scale) for p,d in zip(points,distances) if d <= scale)
+        if not(len(d_and_p)):
+            continue
+        close_points, close_distances = zip(*d_and_p) # unzip
+        model_score = significance(close_distances,ambient_dim,model_dim,model_nparam)
+        model = (model_params, close_points, model_score)
+        if model_score < 1:
+            detected_models.append(model)
+    return detected_models
+
+from troteplot import *
+
+def mask_greedy(points, candidate_models, model_dim, model_nparam, model_distance_fun, scale, debug=False):
+    cand_points = tuple(points)
+    filtered_models = list()
+    if not len(candidate_models):
+        return filtered_models()
+
+    candidate_model_params = list(m[0] for m in candidate_models)
+    iter = 1
+    while len(cand_points):
+        # at this point the candidate models are already a tuple (params,nfa,points)
+        # the 'detect'function takes as input the params, not the tuple
+        print('---')
+        print('filtered so far',len(filtered_models))
+        print('remaining points',len(cand_points))
+        models_with_corrected_nfas = detect(cand_points, candidate_model_params, model_dim, model_nparam, model_distance_fun, scale)
+        print('remaining models',len(models_with_corrected_nfas))
+        if not(len(models_with_corrected_nfas)):
+            break
+        model_params = list(m[0] for m in models_with_corrected_nfas)
+        model_points = list(m[1] for m in models_with_corrected_nfas)
+        model_nfas = list(m[2] for m in models_with_corrected_nfas)
+        best_idx = np.argmin(model_nfas)
+        print('best model idx',best_idx)
+        best_nfa  = model_nfas[best_idx]
+        if best_nfa >= 1:
+            break
+        print('best model nfa',best_nfa)
+        best_points = model_points[best_idx]
+        best_params = model_params[best_idx]
+        print('best model params',best_params)
+        print('best model npoints',len(best_points))
+        print('best model points')
+        filtered_models.append((best_params,best_points,best_nfa))
+        if debug:
+            ax = plt.figure().gca()
+            plot_points(ax,cand_points)
+            bbox = fit_bounding_box(points)
+            plt.xlim(bbox[0][0], bbox[0][1])
+            plt.ylim(bbox[1][0], bbox[1][1])
+            plot_affine_model_2d(ax,best_params,50,0.5,color=(0.0,0.0,0.5,0.1))
+            plot_points(ax,best_points,color='blue')
+            plt.savefig(f'mask_iter_{iter}.pdf')
+            plt.close()
+        #
+        # remove aligned points
+        #
+        cand_points = subtract_points(cand_points,best_points)
+        iter += 1
+    plt.show()
+    return filtered_models
+
+
+def mask_rafa(points, cand_models, scale):
+
+    cand_models = list(cand_models)
+    filtered_models = list()
+    #
+    # The baseline (global ) NFAs are computed _once_
+    #
+    cand_nfas = [nfa_ks(points, cand, 1, 3, distance_to_affine, scale) for cand in cand_models]
+    #
+    # the candidates are sorted _once_ using their NFAs
+    # the most significant have lower NFA, so the ascending order is ok
+    #
+    idx = np.argsort(cand_nfas)
+    cand_nfas = [cand_nfas[i] for i in idx]
+    cand_models = [cand_models[i] for i in idx]
+    cand_points = [find_aligned_points(points, c, distance_to_affine, scale) for c in cand_models]
+    cand_models = list(zip(cand_models,cand_points,cand_nfas))
+    # now we repeat
+    #
+    excluded_points = list()
+    filtered_models = list()
+    while len(cand_models):
+        best_cand,best_points, best_nfa = cand_models[0]
+        if best_nfa >= 1:
+            break
+        filtered_models.append((best_cand,best_points,best_nfa))
+        excluded_points.extend(best_points)
+        new_cand_models = list()
+        for t in range(1,len(cand_models)):
+            other_model,other_nfa,other_points = cand_models[t]
+            #
+            # remove the best candidate points from this model
+            #
+            other_rem = subtract_points(other_points,excluded_points)
+            if len(other_rem) <= 5:
+                continue
+            #
+            # see if it is still significant
+            #
+            rem_nfa = nfa_ks(other_rem, other_model, m, m + 1, distance_to_affine, scale, ntests=N ** 2)
+            #
+            # if it is, it is the new top
+            #
+            if rem_nfa < 1:
+                new_cand_models.append((other_model,other_points,other_nfa))
+            else:
+                pass
+        #
+        #
+        # we continue the analysis with the filtered models
+        cand_models = new_cand_models
+    return filtered_models
+
 
 def ransac_nfa_affine_uniscale_greedy(points,scale,nsamp,rng):
     N = len(points)
@@ -371,7 +506,6 @@ def ransac_nfa_affine_uniscale_greedy(points,scale,nsamp,rng):
 
     candidates = ransac_affine(points,m,nsamp,rng)
     cand_points = tuple(points)
-
     while len(cand_points):
         nfas = [nfa_ks(cand_points, cand, m, m + 1, distance_to_affine, scale) for cand in candidates]
         best_idx = np.argmin(nfas)

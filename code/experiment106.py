@@ -23,34 +23,85 @@ from  trotelib import *
 from troteplot import *
 import matplotlib.cm as cm
 
-def ransac_baseline_test(points,scale,nsamp,rng):
+def ransac_baseline_test(points,scale,nsamp,fbase,rng):
     """
     :return:
     """
-    fig = plt.figure(figsize=(14,6))
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.gca()
+    plot_points(ax,points)
+    plt.savefig(fbase + '_data_points.pdf')
+    plt.savefig(fbase + '_data_points.png')
+    plt.savefig(fbase + '_data_points.svg')
+    plt.close(fig)
+    bbox = fit_bounding_box(points)
+    fig = plt.figure(figsize=(6,6))
     N   = len(points)
     m = 1
     candidates = ransac_affine(points,m,nsamp,rng)
-    print("FUUU")
-    print(candidates)
+    print('candidates:',len(candidates))
     cmap = cm.get_cmap("viridis")
     nfas= list()
     counts = list()
-    for cand in candidates:
-        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_patch, scale, ntests=N**2, return_counts=True)
+    for i,cand in enumerate(candidates):
+        nfa, count = nfa_ks(points, cand, m, m+1, distance_to_affine, scale, ntests=N**2, return_counts=True)
         nfas.append(-np.log10(nfa))
         counts.append(count)
+        if i < 15:
+            plot_affine_model_2d(ax, cand, 50, scale, color=(0,0.25,0.5,0.1))
+            a_points = np.array(find_aligned_points(points, cand, distance_to_affine, scale))
+            plt.scatter(a_points[:, 0], a_points[:, 1], color="black", s=3, alpha=0.5)
+    plt.xlim(bbox[0][0],bbox[0][1])
+    plt.ylim(bbox[1][0],bbox[1][1])
+    plt.savefig(fbase + '_some_candidates.pdf')
+    plt.savefig(fbase + '_some_candidates.png')
+    plt.savefig(fbase + '_some_candidates.svg')
+    plt.close(fig)
+
+    raw_models = detect(points,candidates,m,m+1,distance_to_affine,scale)
+    print('raw models:',len(raw_models))
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.gca()
+    for i,cand in enumerate(raw_models):
+        cand_params, cand_points, cand_nfa = cand
+        plot_affine_model_2d(ax, cand_params, 50, scale, color=(0,0.25,0.5,0.1))
+        a_points = np.array(cand_points)
+        plt.scatter(a_points[:, 0], a_points[:, 1], color="black", s=3, alpha=0.5)
+    plt.xlim(bbox[0][0],bbox[0][1])
+    plt.ylim(bbox[1][0],bbox[1][1])
+    plt.savefig(fbase + '_raw_candidates.pdf')
+    plt.savefig(fbase + '_raw_candidates.png')
+    plt.savefig(fbase + '_raw_candidates.svg')
+    plt.close(fig)
+
+    filtered_models = mask_greedy(points, raw_models, m, m+1, distance_to_affine, scale, debug=True)
+    print('filtered models:',len(filtered_models))
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.gca()
+    for i,cand in enumerate(filtered_models):
+        cand_param, cand_points, cand_nfas = cand
+        plot_affine_model_2d(ax, cand_param, 50, scale, color=(0,0.25,0.5,0.1))
+        a_points = np.array(cand_points)
+        plt.scatter(a_points[:, 0], a_points[:, 1], color="black", s=3, alpha=0.5)
+    plt.xlim(bbox[0][0],bbox[0][1])
+    plt.ylim(bbox[1][0],bbox[1][1])
+    plt.savefig(fbase + '_filtered_candidates.pdf')
+    plt.savefig(fbase + '_filtered_candidates.png')
+    plt.savefig(fbase + '_filtered_candidates.svg')
+    plt.close(fig)
+
     #
     # for debug:
     #
-    idx = np.argsort(counts)
-    nfas_sorted = np.array(nfas)[idx]
-    counts_sorted = np.array(counts)[idx]
-    for nfa,cnt in zip(nfas_sorted,counts_sorted):
-        print('npoints',cnt,'nfa',nfa)
+    #idx = np.argsort(counts)
+    #nfas_sorted = np.array(nfas)[idx]
+    #counts_sorted = np.array(counts)[idx]
+    #for nfa,cnt in zip(nfas_sorted,counts_sorted):
+    #    print('npoints',cnt,'nfa',nfa)
     #
     # plot stuff
     #
+    fig = plt.figure(figsize=(14,6))
     ax = plt.subplot(1,2,1)
     plot_points(ax,points)
     plt.title('dataset')
@@ -71,17 +122,9 @@ def ransac_baseline_test(points,scale,nsamp,rng):
             plt.scatter(a_points[:, 0], a_points[:, 1], color="gray", s=4, alpha=0.5)
             det += 1
     print('det',det,'not det',len(candidates)-det)
-
     plt.colorbar()
-    xmin = np.min([p[0] for p in points])
-    xmax = np.max([p[0] for p in points])
-    ymin = np.min([p[1] for p in points])
-    ymax = np.max([p[1] for p in points])
-    xlen = xmax-xmin
-    ylen = ymax-ymin
-    maxlen = max(xlen,ylen)
-    plt.xlim(xmin,xmin+maxlen)
-    plt.ylim(ymin,ymin+maxlen)
+    plt.xlim(bbox[0][0],bbox[0][1])
+    plt.ylim(bbox[1][0],bbox[1][1])
     plt.title('detected models')
     plt.savefig('experiment106.svg')
     plt.close()
@@ -101,15 +144,21 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=42,
                     help="Random seed.")
     ap.add_argument("--recompute", action="store_true", help="Force recomputation even if result exists.")
+    ap.add_argument("--dataset",type=str, default="azucarlito", help="which dataset to test.")
     args = vars(ap.parse_args())
     nransac = args["nsamples"]
     npoints = args["npoints"]
     scatter = args["scatter"]
+    dataset = args["dataset"]
     scale = args["scale"]
     seed = args["seed"]
     rng = random.default_rng(seed)
-    all_points, ground_truth = azucarlito(npoints, scatter,rng)
-    nfas = ransac_baseline_test(all_points, scale, nransac, rng)
-
-    fbase = (f'baseline RANSAC test for a fixed pattern of 4 lines o a plane').lower().replace(' ', '_').replace('=',
-                                                                                                                 '_')
+    #all_points, ground_truth = azucarlito(npoints, scatter,rng)
+    #nfas = ransac_baseline_test(all_points, scale, nransac, rng)
+    all_points, ground_truth = generate_dataset(dataset, npoints, scatter, rng)
+    bbox = fit_bounding_box(all_points)
+    bg_points = sim_background_points(npoints//2,bbox,rng)
+    all_points.extend(bg_points)
+    ground_truth.append(("background",bg_points))
+    fbase = (f'affine {dataset} ransac').lower().replace(' ', '_').replace('=','_')
+    nfas = ransac_baseline_test(all_points, scale, nransac, fbase, rng)

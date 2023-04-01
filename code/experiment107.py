@@ -48,7 +48,6 @@ if __name__ == "__main__":
     rng = random.default_rng(seed)
     #
     all_points, ground_truth = generate_dataset(dataset, npoints, scatter, rng)
-
     bbox = fit_bounding_box(all_points)
     bg_points = sim_background_points(args["nbpoints"],bbox,rng)
     all_points.extend(bg_points)
