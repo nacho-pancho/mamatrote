@@ -70,5 +70,5 @@ if __name__ == "__main__":
     model_points = [m[1] for m in models]
     models =[ m[0] for m in models]
     plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale)
-    plt.savefig('uniscale_nfa.svg')
+    plt.savefig('uniscale_nfa_affine_greedy.svg')
     plt.show()

@@ -18,7 +18,7 @@ from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from trotelib import *
 from troteplot import *
-from trotedata import generate_dataset
+from trotedata import  *
 import argparse
 
 if __name__ == "__main__":
@@ -72,5 +72,5 @@ if __name__ == "__main__":
 
     ax = plt.subplot(1,2,2)
     plot_uniscale_ransac_affine(ax, all_points, params, scores, points, scale)
-    plt.savefig('uniscale_nfa.svg')
+    plt.savefig('uniscale_nfa_affine_rafa.svg')
     plt.show()

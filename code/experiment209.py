@@ -18,7 +18,7 @@ from mpl_toolkits.mplot3d import axis3d
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from trotelib import *
 from troteplot import *
-from trotedata import generate_dataset
+from trotedata import *
 import argparse
 
 if __name__ == "__main__":
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     plot_points(ax,all_points)
     plt.show()
 
-    detected_models = ransac_nfa_patch_uniscale_rafa(all_points,scale,nransac,rng)
+    detected_models = ransac_nfa_affine_uniscale_rafa(all_points,scale,nransac,rng)
     if not len(detected_models):
         print("NOTHING DETECTED!")
         exit(0)
@@ -71,6 +71,6 @@ if __name__ == "__main__":
     plot_points(ax,all_points,alpha=1,size=2)
 
     ax = plt.subplot(1,2,2)
-    plot_uniscale_ransac_patch(ax, all_points, params, scores, points, scale)
-    plt.savefig('uniscale_nfa.svg')
+    plot_uniscale_ransac_affine(ax, all_points, params, scores, points, scale)
+    plt.savefig('uniscale_nfa_patch_rafa.svg')
     plt.show()

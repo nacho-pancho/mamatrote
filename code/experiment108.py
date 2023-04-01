@@ -87,7 +87,7 @@ if __name__ == "__main__":
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.savefig('multiscale_nfa.svg')
+    plt.savefig('multiscale_nfa_affine_greedy.svg')
     plt.show()
     plt.close()
 

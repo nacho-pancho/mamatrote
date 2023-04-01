@@ -21,7 +21,7 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from  trotelib import *
 from troteplot import *
 import matplotlib.cm as cm
-from trotedata import generate_dataset
+from trotedata import *
 import argparse
 
 if __name__ == "__main__":
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.savefig('multiscale_nfa.svg')
+    plt.savefig('multiscale_nfa_affine_rafa.svg')
     plt.show()
     plt.close()
 

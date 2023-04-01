@@ -67,12 +67,12 @@ if __name__ == "__main__":
     plot_points(ax,all_points)
     plt.show()
 
-    nodes = ransac_nfa_patch_multiscale_greedy(all_points,scale=20,factor=factor,nsamp=nransac,rng=rng)
+    nodes = ransac_nfa_affine_multiscale_greedy(all_points,scale=20,factor=factor,nsamp=nransac,rng=rng)
 
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot()
     for node in nodes:
-        plot_multiscale_ransac_patch(ax, node,
+        plot_multiscale_ransac_affine(ax, node,
                                       not args["no_plot_leaves"],
                                       not args["no_plot_single"],
                                       not args["no_plot_branches"])
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.savefig('multiscale_nfa.svg')
+    plt.savefig('multiscale_nfa_patch_greedy.svg')
     plt.show()
     plt.close()
 

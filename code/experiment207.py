@@ -59,7 +59,7 @@ if __name__ == "__main__":
     plot_points(ax,all_points)
     plt.show()
 
-    models = ransac_nfa_patch_uniscale_greedy(all_points,scale,nransac,rng)
+    models = ransac_nfa_affine_uniscale_greedy(all_points,scale,nransac,rng)
     scores = [-np.log10(m[2]) for m in models]
 
     fig = plt.figure(figsize=(14,6))
@@ -69,6 +69,6 @@ if __name__ == "__main__":
     ax = plt.subplot(1,2,2)
     model_points = [m[1] for m in models]
     models =[ m[0] for m in models]
-    plot_uniscale_ransac_patch(ax, all_points, models, scores, model_points, scale)
-    plt.savefig('uniscale_nfa.svg')
+    plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale)
+    plt.savefig('uniscale_nfa_patch_greedy.svg')
     plt.show()

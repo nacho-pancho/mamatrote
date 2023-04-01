@@ -33,8 +33,6 @@ def ransac_baseline_test(points,scale,nsamp,rng):
     model_dim = 1
     nparams = ambient_dim + 1
     candidates = ransac_sphere(points,ambient_dim,nsamp,rng)
-    print("FUUU")
-    print(candidates)
     cmap = cm.get_cmap("viridis")
     nfas= list()
     counts = list()
