@@ -135,9 +135,7 @@ def sim_patch_points(_num_points, _patch, _scatter, _rng):
     """
     c,V,W,P = _patch
     bbox0  = fit_bounding_box(P)
-    bbox = [(r[0]-_scatter,r[1]+_scatter) for r in bbox0 ]
-    n = len(c)
-    m = len(V)
+    bbox = [(r[0]-5*_scatter,r[1]+5*_scatter) for r in bbox0 ]
     _sim_points = list()
     _rem_points = _num_points
     while _rem_points > 0:
@@ -220,30 +218,31 @@ def azucarlito(npoints,scatter,rng):
     all_points = list()
     bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+        model_points = sim_patch_points(model, npermodel, bounding_box, scatter, rng)
         ground_truth.append( (model,model_points) )
         all_points.extend(model_points)
     return all_points,ground_truth
 
 
-def waffle(npoints, scatter, rng, size = 10, nlines=4):
+def waffle(npoints, scatter, rng, size = 10, nlines=5):
     models = list()
     for i in range(nlines):
         a = (i*size/(nlines-1),0)
         b = (i*size/(nlines-1),size)
-        row = build_affine_set((a, b))
+        row = build_patch((a, b))
         models.append(row)
         a = (0,i*size/(nlines-1))
         b = (size,i*size/(nlines-1))
-        col = build_affine_set((a,b))
-        models.append( col )
+        col = build_patch((a,b))
+        print(a,b)
+        models.append(col)
     nmodels = len(models)
     npermodel = npoints//nmodels
     ground_truth = list()
     all_points   = list()
     bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_points = sim_affine_points(model, npermodel, bounding_box, scatter, rng)
+        model_points = sim_patch_points(npermodel, model, scatter, rng)
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth
@@ -257,16 +256,18 @@ def satan(npoints, scatter, rng, size = 5, vert = 5, step=2):
         a = (size*np.cos(i*angle), size*np.sin(i*angle))
         b = (size*np.cos((i+step)*angle), size*np.sin((i+step)*angle))
         i = (i + step) % vert
-        models.append( build_affine_set((a,b)) )
+        model = build_patch((a,b))
+        print(model)
+        models.append(model)
+
         if not i:
             break
     nmodels = len(models)
     npermodel = npoints//nmodels
     ground_truth = list()
     all_points   = list()
-    bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_points = sim_affine_points(model, npermodel, bounding_box, rng, scatter=scatter)
+        model_points = sim_patch_points(npermodel, model, scatter, rng)
         ground_truth.append((model, model_points))
         all_points.extend(model_points)
     return all_points, ground_truth

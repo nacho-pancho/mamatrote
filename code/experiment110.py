@@ -86,9 +86,9 @@ if __name__ == "__main__":
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.savefig('multiscale_nfa_affine_rafa.png')
-    plt.savefig('multiscale_nfa_affine_rafa.svg')
-    plt.savefig('multiscale_nfa_affine_rafa.pdf')
+    plt.savefig(f'multiscale_nfa_{dataset}_rafa.png')
+    plt.savefig(f'multiscale_nfa_{dataset}_rafa.svg')
+    plt.savefig(f'multiscale_nfa_{dataset}_rafa.pdf')
     plt.close()
 
 

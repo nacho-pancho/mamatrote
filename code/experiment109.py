@@ -64,12 +64,18 @@ if __name__ == "__main__":
     scores = [-np.log10(m[2]) for m in detected_models]
     points = [m[1] for m in detected_models]
     params = [m[0] for m in detected_models]
-    fig = plt.figure(figsize=(14,6))
-    ax = plt.subplot(1,2,1)
+    fig = plt.figure(figsize=(6,6))
+    ax = plt.gca()
     plot_points(ax,all_points,alpha=1,size=2)
+    plt.savefig(f'uniscale_nfa_{dataset}_rafa_data.png')
+    plt.savefig(f'uniscale_nfa_{dataset}_rafa_data.svg')
+    plt.savefig(f'uniscale_nfa_{dataset}_rafa_data.pdf')
+    plt.close()
 
-    ax = plt.subplot(1,2,2)
+    fig = plt.figure(figsize=(6,6))
+    ax = plt.gca()
     plot_uniscale_ransac_affine(ax, all_points, params, scores, points, scale)
-    plt.savefig('uniscale_nfa_affine_rafa.svg')
-    plt.savefig('uniscale_nfa_affine_rafa.png')
-    plt.savefig('uniscale_nfa_affine_rafa.pdf')
+    plt.savefig(f'uniscale_nfa_{dataset}_rafa_result.png')
+    plt.savefig(f'uniscale_nfa_{dataset}_rafa_result.svg')
+    plt.savefig(f'uniscale_nfa_{dataset}_rafa_result.pdf')
+    plt.close()
