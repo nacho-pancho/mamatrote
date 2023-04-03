@@ -103,15 +103,15 @@ def build_affine_set(list_of_points):
     if m > 0:
         # construct an orthogonal basis for the span of V and its orthogonal complement
         V = np.array(list_of_points[1:]) - x_0
-        Q = gram_schmidt(V)
-        V = Q[:m, :]
-        W = Q[m:, :]
-        # _A = _rng.normal(size=(n,n))
-        # _A[:m,:] = V
-        # _Q,_ = la.qr(_A.T) # QR operates on columns; we have rows; thus the transpostion
-        # _Q = _Q.T
-        # V = _Q[:m,:] # basis for the linear part of the affine set
-        # W = _Q[m:,:] # orthogonal complement
+        if False:
+            _Q = gram_schmidt(V)
+        else:
+            _A = _rng.normal(size=(n,n))
+            _A[:m,:] = V
+            _Q,_ = la.qr(_A.T) # QR operates on columns; we have rows; thus the transpostion
+            _Q = _Q.T
+        V = _Q[:m, :]
+        W = _Q[m:, :]
     else:
         V = np.zeros((0, 0))  # a 0-dimensional affine subspace (the point x_0)
         W, _ = la.qr(_rng.normal(size=(n, n)))
@@ -129,7 +129,7 @@ def build_patch(list_of_points):
     """
     return build_affine_set(list_of_points)
 
-def build_shpere(list_of_points):
+def build_sphere(list_of_points):
     pmat = np.array(list_of_points)
     c    = np.mean(pmat,axis=0)
     r = np.linalg.norm(c-np.array(list_of_points[0]))
@@ -270,7 +270,6 @@ def build_affine_set_relative_to(affine_set, dist=0, angle=0):
         c2 = c
     return (c2, V2, W2, V)
 
-
 def distance_to_affine(list_of_points, affine_set, P=None):
     """
     Compute the distance from a set of points to the subspace
@@ -284,10 +283,12 @@ def distance_to_affine(list_of_points, affine_set, P=None):
     N = len(list_of_points)  # works with matrices and lists alike
     if N == 0:
         return []
-    x_0, V, W, P = affine_set
-    Xa = np.array(list_of_points) - x_0
-    Xp = Xa @ W.T
-    return la.norm(Xp, axis=1)
+    c, V, W, P = affine_set
+    Xa = np.array(list_of_points)
+    Xc = Xa - c
+    Xp = Xc @ W.T
+    distances = la.norm(Xp,axis=1)
+    return distances
 
 
 def ransac_affine(points, m, k, _rng):
@@ -323,7 +324,7 @@ def ransac_sphere(points, m, k, _rng):
     for i in range(k):
         chosen_ones = _rng.choice(idx,size=m+1,replace=False)
         list_of_points = [points[r] for r in chosen_ones ]
-        sampled_model = build_shpere(list_of_points)
+        sampled_model = build_sphere(list_of_points)
         models.append(sampled_model)
     return models
 

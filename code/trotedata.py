@@ -118,8 +118,8 @@ def sim_affine_points(_affine_set, _num_points, bounding_box, scatter, _rng, sca
         else:
             x =  c + a @ W
         list_of_points.append(x)
+        # debug
     return list_of_points
-
 
 def sim_patch_model(bounding_box, rng):
     m = len(bounding_box) # bounding box is a list of pairs x[i]_min, x[i]_max where i is the dim

@@ -136,13 +136,15 @@ def plot_scores_2d(x,xlabel,y,ylabel,nfa,title):
 
 def plot_scores_img(y,ylabel,x,xlabel,nfa,title):
     #detmap = LinearSegmentedColormap.from_list("pepe",colors=[(0,"black"), (1,"blue")])
-    fig = plt.figure(figsize=(10,10))
+    fig = plt.figure(figsize=(5,5))
     plt.imshow(np.flipud(nfa), cmap='gray', extent=[x[0], x[-1], y[0], y[-1]], aspect='auto')
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
     fname = title.lower().replace(' ','_').replace('=','_')
     plt.savefig(f'{fname}_img.png')
+    plt.savefig(f'{fname}_img.pdf')
+    plt.savefig(f'{fname}_img.svg')
     plt.close(fig)
 
 
@@ -256,10 +258,19 @@ def plot_multiscale_ransac_sphere(ax, model_node, plot_leaves, plot_single_paren
         plot_multiscale_ransac_sphere(ax, node, plot_leaves, plot_single_parents, plot_branches)
     return ax
 
-
+from trotelib import fit_bounding_box
 def plot_points(ax,list_of_points,size=4,alpha=1,color='black'):
+    n = len(list_of_points[0])
+    bbox = fit_bounding_box(list_of_points)
     mat = np.array(list_of_points)
-    plt.scatter(mat[:,0],mat[:,1],color=color,s=size,alpha=alpha)
+    if n == 2:
+        ax.scatter(mat[:,0],mat[:,1],color=color,s=size,alpha=alpha)
+    if n == 3:
+        ymin = bbox[1][0]
+        ymax = bbox[1][1]
+        yran = ymax-ymin
+        alphas = list(0.2+0.6*(y-ymin)/yran for y in mat[:,1])
+        ax.scatter(mat[:,0],mat[:,1],mat[:,2], color=color,s=size,alpha=alphas)
 
 
 def plot_ring(ax):

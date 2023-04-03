@@ -33,11 +33,11 @@ def oblique_vs_angle(m, n,
                      angles,
                      scales,
                      rng,
-                     npoints=100,
-                     prop=0.5,
+                     npoints=200,
+                     prop=0.75,
                      scatter_dist=None,
                      bg_dist=None,
-                     bg_scale=1,
+                     bg_scale=10,
                      scatter=0.1,
                      seed=42,
                      nsamp=10):
@@ -61,6 +61,17 @@ def oblique_vs_angle(m, n,
         nmodel = int(prop*npoints)
         nback  = npoints - nmodel
         # rotate W and last coord of V
+        if m == 1 and n == 2 and i == nang//2:
+            fig = plt.figure(figsize=(4, 4))
+            ax = fig.add_subplot()
+            plot_points(ax, _test_points)
+            bbox = fit_bounding_box(_test_points)
+            ax.set_xlim(bbox[0][0], bbox[0][1])
+            ax.set_ylim(bbox[1][0], bbox[1][1])
+            plt.savefig('confounding_oblique.png')
+            plt.savefig('confounding_oblique.svg')
+            plt.savefig('confounding_oblique.pdf')
+            plt.close()
         if ang != 0:
             R      = np.eye(n)
             R[m-1:,m-1] = R[m,m] = np.cos(ang)
@@ -103,6 +114,8 @@ if __name__ == "__main__":
                     help="Add this number of pixels to each side of the segmented line / block.")
     ap.add_argument("--seed", type=int, default=42,
                     help="Random seed.")
+    ap.add_argument("--proportion", type=float, default=0.5,
+                    help="Foreground-background proportion.")
     ap.add_argument("--recompute", action="store_true",help="Force recomputation even if result exists.")
     args = vars(ap.parse_args())
     nsamp   = args["nsamples"]
@@ -110,6 +123,7 @@ if __name__ == "__main__":
     npoints = args["npoints"]
     scatter = args["scatter"]
     seed    = args["seed"]
+    proportion = args["proportion"]
     rng = random.default_rng(seed)
 
     scales = np.linspace(0.01,0.4,detail)#np.logspace(-10,-2,base=2,num=40)
@@ -119,7 +133,7 @@ if __name__ == "__main__":
             print(f"n={n} m={m}")
             fbase  = (f'affine NFA vs scale and angle n={n} m={m} s={scatter} N={npoints}').lower().replace(' ','_').replace('=','_')
             if not os.path.exists(fbase+'_z.txt') or args["recompute"]:
-                nfas = oblique_vs_angle(m, n, angles, scales, rng, nsamp=nsamp, npoints=npoints, scatter=scatter)
+                nfas = oblique_vs_angle(m, n, angles, scales, rng, prop=proportion, nsamp=nsamp, npoints=npoints, scatter=scatter)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
                 np.savetxt(fbase + '_y.txt', angles)

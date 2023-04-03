@@ -37,9 +37,9 @@ def model_vs_scale_and_npoints(m,n,
                          npointses,
                          scales,
                          rng,
-                         prop=0.5,
+                         prop=0.75,
                          scatter_dist=None,
-                         bg_scale=1,
+                         bg_scale=10,
                          scatter=0.1,
                          nsamp=10):
     """
@@ -60,6 +60,20 @@ def model_vs_scale_and_npoints(m,n,
             model_points = sim_affine_points(affine_set, nmodel, bounding_box, scatter, rng, scatter_dist)
             back_points  = sim_points(nback, bounding_box, rng)
             _test_points = np.concatenate((model_points,back_points))
+            if k == 0 and i == nnp-1:
+                fig = plt.figure(figsize=(6,6))
+                if n == 2:
+                    ax = fig.add_subplot()
+                else:
+                    ax = fig.add_subplot(projection='3d')
+                plot_points(ax,_test_points)
+                bbox = fit_bounding_box(_test_points)
+                ax.set_xlim(bbox[0][0],bbox[0][1])
+                ax.set_ylim(bbox[1][0],bbox[1][1])
+                plt.savefig(fbase+'_sample_dataset.png')
+                plt.savefig(fbase+'_sample_dataset.svg')
+                plt.savefig(fbase+'_sample_dataset.pdf')
+                plt.close()
             for j,s in enumerate(scales):
                 nfa = nfa_ks(_test_points, affine_set, m, m+1, distance_to_affine, s)
                 nfas[i,j] += nfa < 1
@@ -82,6 +96,8 @@ if __name__ == "__main__":
                     help="Add this number of pixels to each side of the segmented line / block.")
     ap.add_argument("--seed", type=int, default=42,
                     help="Random seed.")
+    ap.add_argument("--proportion", type=float, default=0.5,
+                    help="Foreground-background proportion.")
     ap.add_argument("--recompute", action="store_true", help="Force recomputation even if result exists.")
     args = vars(ap.parse_args())
     nsamp = args["nsamples"]
@@ -89,19 +105,20 @@ if __name__ == "__main__":
     npoints = args["npoints"]
     scatter = args["scatter"]
     seed = args["seed"]
+    proportion = args["proportion"]
     rng = random.default_rng(seed)
 
     Ns = np.round(np.linspace(max(10, npoints / 10), npoints, detail)).astype(int)
-    scales = np.linspace(0.01, 0.4, detail)  # np.logspace(-10,-2,base=2,num=40)
+    scales = np.linspace(0.01, 1, detail)  # np.logspace(-10,-2,base=2,num=40)
     for n in (2, 3):
-        for m in range(n):
+        for m in range(n-2,n):
             print(f"n={n} m={m}")
             fbase = (f'affine NFA vs scale and npoints n={n} m={m} s={scatter} N={npoints}').lower().replace(' ',
                                                                                                       '_').replace(
                 '=', '_')
             print("will perform", len(Ns), "x", len(scales), "tests")
             if not os.path.exists(fbase + '_z.txt') or args["recompute"]:
-                nfas = model_vs_scale_and_npoints(m, n, Ns, scales, rng, nsamp=nsamp, scatter=scatter)
+                nfas = model_vs_scale_and_npoints(m, n, Ns, scales, rng, prop=proportion, nsamp=nsamp, scatter=scatter)
                 np.savetxt(fbase + '_z.txt', nfas)
                 np.savetxt(fbase + '_x.txt', scales)
                 np.savetxt(fbase + '_y.txt', Ns)
