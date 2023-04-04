@@ -65,10 +65,14 @@ if __name__ == "__main__":
     ground_truth.append(("background",bg_points))
 
     fig = plt.figure(figsize=(6,6))
-    ax = fig.add_subplot()
-    plot_points(ax,all_points)
-    nodes = ransac_nfa_affine_multiscale_greedy(all_points,scale=20,factor=factor,nsamp=nransac,rng=rng)
+    ax = plt.gca()
+    plot_points(ax,all_points,alpha=1,size=2)
+    plt.savefig(f'multiscale_nfa_{dataset}_greedy_data.png')
+    plt.savefig(f'multiscale_nfa_{dataset}_greedy_data.svg')
+    plt.savefig(f'multiscale_nfa_{dataset}_greedy_data.pdf')
+    plt.close()
 
+    nodes = ransac_nfa_affine_multiscale_greedy(all_points,scale=20,factor=factor,nsamp=nransac,rng=rng)
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot()
     for node in nodes:
@@ -86,9 +90,9 @@ if __name__ == "__main__":
     plt.xlim(xmin,xmin+maxlen)
     plt.ylim(ymin,ymin+maxlen)
     plt.title('detected models')
-    plt.savefig('multiscale_nfa_affine_greedy.png')
-    plt.savefig('multiscale_nfa_affine_greedy.svg')
-    plt.savefig('multiscale_nfa_affine_greedy.pdf')
+    plt.savefig(f'multiscale_nfa_{dataset}_greedy_result.png')
+    plt.savefig(f'multiscale_nfa_{dataset}_greedy_result.svg')
+    plt.savefig(f'multiscale_nfa_{dataset}_greedy_result.pdf')
     plt.close()
 
 

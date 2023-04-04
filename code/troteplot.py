@@ -264,14 +264,19 @@ def plot_points(ax,list_of_points,size=4,alpha=1,color='black'):
     bbox = fit_bounding_box(list_of_points)
     mat = np.array(list_of_points)
     if n == 2:
-        ax.scatter(mat[:,0],mat[:,1],color=color,s=size,alpha=alpha)
+        if  isinstance(color,(list,tuple,np.ndarray)):
+            ax.scatter(mat[:,0], mat[:,1], c=color,s=size,alpha=alpha)
+        else:
+            ax.scatter(mat[:, 0], mat[:, 1], color=color, s=size, alpha=alpha)
     if n == 3:
         ymin = bbox[1][0]
         ymax = bbox[1][1]
         yran = ymax-ymin
         alphas = list(0.2+0.6*(y-ymin)/yran for y in mat[:,1])
-        ax.scatter(mat[:,0],mat[:,1],mat[:,2], color=color,s=size,alpha=alphas)
-
+        if  isinstance(color,list) or isinstance(color,tuple):
+            ax.scatter(mat[:,0],mat[:,1],mat[:,2], c=color,s=size,alpha=alphas)
+        else:
+            ax.scatter(mat[:,0],mat[:,1],mat[:,2], color=color,s=size,alpha=alphas)
 
 def plot_ring(ax):
     n, radii = 50, [.7, .95]

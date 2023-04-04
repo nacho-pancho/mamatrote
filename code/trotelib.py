@@ -161,23 +161,21 @@ def distance_to_patch(list_of_points, patch):
 
     c, V, W, P = patch
     m, n = V.shape # dim of patch and ambient space
+    Xa = np.array(list_of_points)
+    Xc = Xa - c # points relative to c
     if m > 2:
         print("not implemented")
         exit(1)
     elif m == 0:
-        if m == 0: # super easy, a point
-            Xa = np.array(list_of_points) - c
-            return la.norm(Xa,axis=1)
+        return la.norm(Xc,axis=1)
     else:
         # a triangle or a segment
-        Xa = np.array(list_of_points) - c
         if n-m > 0:
-            Xortho = Xa @ W.T
+            Xortho = Xc @ W.T
             do =  la.norm(Xortho, axis=1)
         else:
             do = np.zeros(N)
-        Xpara  = Xa @ V.T
-        dp = np.zeros(N)
+            dp = np.zeros(N)
         # now the fine part: distance to the affine set within the affine space
         if m == 1: # easy, a segment
             # here we take the first point (c) as a reference
@@ -186,18 +184,16 @@ def distance_to_patch(list_of_points, patch):
             # if 0 <= x <= 1, the point p lies between c and a, so the distance is 0
             # if x < 0 or x > 1, the distance is corr. |x| or x-1
             #
-            a = np.array(P[1])
-            ac = c - a
+            ac = np.array(P[1]) - c# a relative to c
             dac = la.norm(ac)
-            # note that for the m=1 case, V is (a-c) normalized so that
-            # the coefficient x is precisely Xpara*|c-a|
-            #for i in range(N):
-            #    print(i,c,Xa[i,:],list_of_points[i],Xpara[i])
-            dp = np.maximum(-Xpara,np.maximum(0,Xpara-dac))
+            dXc = np.dot(Xc,ac)/dac
+            dXa = dac - dXc
+            dp = np.array(list(0 if max(dxa,dxc)  < dac else min(dxa,abs(dxc)) for dxa,dxc in zip(dXa,dXc)))
             d =  np.sqrt(dp.ravel()**2 + do**2)
             return d
             #return np.sqrt(dp ** 2)
         if m == 2: # triangle, not so easy
+            Xp  = Xc @ V.T
             #
             # given the 3 vertices a, b, c, and a point there are 6 distances:
             # the point to the three segments a-b, b-c, c-a
@@ -214,7 +210,7 @@ def distance_to_patch(list_of_points, patch):
             b = np.array(P[2])
             # check interior
             AB = np.array([a-c,b-c]) # a and b as rows
-            ABcoef = np.linalg.solve(AB.T,Xa.T)
+            ABcoef = np.linalg.solve(AB.T,Xc.T)
             di = [ 1e20*(np.any(c < 0)+(np.sum(c) > 1)) for c in ABcoef.T]
             ab = build_patch([a,b])
             bc = build_patch([b,c])
@@ -447,6 +443,8 @@ def mask_greedy(points, candidate_models, model_dim, model_nparam, model_distanc
 def mask_rafa(points, cand_models, scale):
 
     cand_models = list(cand_models)
+    N = len(points)
+    m = len(cand_models[0][1]) # the number of elements in the basis of V
     filtered_models = list()
     #
     # The baseline (global ) NFAs are computed _once_

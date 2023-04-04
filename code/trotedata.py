@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 TROTELIB
 ========
@@ -135,13 +136,14 @@ def sim_patch_points(_num_points, _patch, _scatter, _rng):
     """
     c,V,W,P = _patch
     bbox0  = fit_bounding_box(P)
-    bbox = [(r[0]-5*_scatter,r[1]+5*_scatter) for r in bbox0 ]
+    bbox = [(r[0]-2*_scatter,r[1]+2*_scatter) for r in bbox0 ]
     _sim_points = list()
     _rem_points = _num_points
     while _rem_points > 0:
         _raw_points = sim_background_points(_rem_points*2,bbox,_rng)
         _distances  = distance_to_patch(_raw_points,_patch)
         _inner_points = [p for p,d in zip (_raw_points,_distances) if d <= _scatter]
+        #_inner_points = _raw_points
         _sim_points.extend(_inner_points)
         _rem_points -= len(_inner_points)
     if len(_sim_points) > _num_points:
@@ -204,27 +206,27 @@ def sim_ring_points(_num_points, _sphere, _scatter, _rng):
 def azucarlito(npoints,scatter,rng):
     # kind of Anarchy symbol with double horizontal bar
     models = list()
-    lp = [[6.5,9],[3,14]]
-    models.append(build_affine_set(lp))
-    lp = [[5.5,6.5],[1,3]]
-    models.append(build_affine_set(lp))
-    lp = [[4.5,9],[5,14]]
-    models.append(build_affine_set(lp))
-    lp = [[3.5,9],[4,14]]
-    models.append(build_affine_set(lp))
+    P = ((1,2),(10,2))
+    models.append(build_patch(P))
+    P = ((1,3),(10,3))
+    models.append(build_patch(P))
+    P = ((1,0),(7,7))
+    models.append(build_patch(P))
+    P = ((10,0),(4,7))
+    models.append(build_patch(P))
     k = len(models)
     ground_truth = list()
     npermodel = npoints // (k+1)
     all_points = list()
     bounding_box = [(0,15),(0,15)]
     for model in models:
-        model_points = sim_patch_points(model, npermodel, bounding_box, scatter, rng)
+        model_points = sim_patch_points(npermodel, model, scatter, rng)
         ground_truth.append( (model,model_points) )
         all_points.extend(model_points)
     return all_points,ground_truth
 
 
-def waffle(npoints, scatter, rng, size = 10, nlines=5):
+def waffle(npoints, scatter, rng, size = 10, nlines=4):
     models = list()
     for i in range(nlines):
         a = (i*size/(nlines-1),0)
@@ -234,7 +236,6 @@ def waffle(npoints, scatter, rng, size = 10, nlines=5):
         a = (0,i*size/(nlines-1))
         b = (size,i*size/(nlines-1))
         col = build_patch((a,b))
-        print(a,b)
         models.append(col)
     nmodels = len(models)
     npermodel = npoints//nmodels
@@ -539,4 +540,38 @@ def generate_dataset(name,npoints,scatter,rng):
     elif name == "satan":
         return satan(npoints, scatter,rng)
 
+import argparse
 
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--npoints", type=int, default=200,
+                    help="text file where input files are specified; each entry should be of the form roll/image.tif")
+    ap.add_argument("--nbpoints", type=int, default=200,
+                    help="text file where input files are specified; each entry should be of the form roll/image.tif")
+    ap.add_argument("--scatter", type=float, default=0.1,
+                    help="How far are the model points scattered from the ground truth element.")
+    ap.add_argument("--seed", type=int, default=42,
+                    help="Random seed.")
+    ap.add_argument("--dataset",type=str, default="azucarlito", help="which dataset to test.")
+    args = vars(ap.parse_args())
+    npoints = args["npoints"]
+    scatter = args["scatter"]
+    seed    = args["seed"]
+    dataset = args["dataset"]
+    rng = random.default_rng(seed)
+    #
+    all_points, ground_truth = generate_dataset(dataset, npoints, scatter, rng)
+    bbox = fit_bounding_box(all_points)
+
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.add_subplot()
+    distances = np.array(distance_to_patch(all_points,ground_truth[-1][0]))
+    distances = distances/np.max(distances)
+    ng = len(ground_truth)
+    N = len(all_points)
+    colors = np.floor(ng*np.arange(0,1,step=1/N))/ng
+    plot_points(ax,all_points,alpha=0.3,color=colors)
+    #plt.set_cmap('hot')
+    #plot_points(ax,all_points,alpha=0.4,color=distances)
+    plt.grid()
+    plt.show()

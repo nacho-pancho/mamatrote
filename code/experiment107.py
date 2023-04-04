@@ -59,15 +59,20 @@ if __name__ == "__main__":
 
     models = ransac_nfa_affine_uniscale_greedy(all_points,scale,nransac,rng)
     scores = [-np.log10(m[2]) for m in models]
-
-    fig = plt.figure(figsize=(14,6))
-    ax = plt.subplot(1,2,1)
-    plot_points(ax,all_points,alpha=1,size=2)
-
-    ax = plt.subplot(1,2,2)
     model_points = [m[1] for m in models]
-    models =[ m[0] for m in models]
-    plot_uniscale_ransac_affine(ax, all_points, models, scores, model_points, scale)
-    plt.savefig('uniscale_nfa_affine_greedy.png')
-    plt.savefig('uniscale_nfa_affine_greedy.svg')
-    plt.savefig('uniscale_nfa_affine_greedy.pdf')
+    params = [ m[0] for m in models]
+    fig = plt.figure(figsize=(6,6))
+    ax = plt.gca()
+    plot_points(ax,all_points,alpha=1,size=2)
+    plt.savefig(f'uniscale_nfa_{dataset}_greedy_data.png')
+    plt.savefig(f'uniscale_nfa_{dataset}_greedy_data.svg')
+    plt.savefig(f'uniscale_nfa_{dataset}_greedy_data.pdf')
+    plt.close()
+
+    fig = plt.figure(figsize=(6,6))
+    ax = plt.gca()
+    plot_uniscale_ransac_affine(ax, all_points, params, scores, model_points, scale)
+    plt.savefig(f'uniscale_nfa_{dataset}_greedy_result.png')
+    plt.savefig(f'uniscale_nfa_{dataset}_greedy_result.svg')
+    plt.savefig(f'uniscale_nfa_{dataset}_greedy_result.pdf')
+    plt.close()
